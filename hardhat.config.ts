@@ -1,4 +1,5 @@
 import "@nomicfoundation/hardhat-toolbox";
+import * as dotenv from "dotenv";
 import "hardhat-deploy";
 import type { HardhatUserConfig } from "hardhat/config";
 import { vars } from "hardhat/config";
@@ -8,10 +9,11 @@ import "./tasks/accounts";
 import "./tasks/greet";
 import "./tasks/taskDeploy";
 
+dotenv.config();
+
 // Run 'npx hardhat vars setup' to see the list of variables that need to be set
 
-const mnemonic: string = vars.get("MNEMONIC");
-const infuraApiKey: string = vars.get("INFURA_API_KEY");
+const infuraApiKey: string = process.env.INFURA_API_KEY || "";
 
 const chainIds = {
   "arbitrum-mainnet": 42161,
@@ -39,11 +41,7 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
       jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
   }
   return {
-    accounts: {
-      count: 10,
-      mnemonic,
-      path: "m/44'/60'/0'/0",
-    },
+    accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     chainId: chainIds[chain],
     url: jsonRpcUrl,
   };
@@ -74,15 +72,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      accounts: {
-        mnemonic,
-      },
       chainId: chainIds.hardhat,
     },
     ganache: {
-      accounts: {
-        mnemonic,
-      },
       chainId: chainIds.ganache,
       url: "http://localhost:8545",
     },
@@ -102,7 +94,7 @@ const config: HardhatUserConfig = {
     tests: "./test",
   },
   solidity: {
-    version: "0.8.19",
+    version: "0.8.21",
     settings: {
       metadata: {
         // Not including the metadata hash
