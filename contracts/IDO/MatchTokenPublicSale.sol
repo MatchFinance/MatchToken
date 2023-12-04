@@ -4,7 +4,6 @@ pragma solidity =0.8.21;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IMatchWhitelistSale } from "../interfaces/IMatchWhitelistSale.sol";
@@ -50,7 +49,7 @@ contract MatchTokenPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable,
         // Total ETH = Min(375ETH, Ethers Received by WL & Public)
         // Total Match = 1500000 (fixed)
         uint256 portionToPublic = (totalEthersReceived * SCALE) /
-            Math.min(totalEthersReceivedByWhitelist + totalEthersReceived, ETH_CAP_TOTAL);
+            (totalEthersReceivedByWhitelist + totalEthersReceived);
 
         return (MATCH_CAP_TOTAL * portionToPublic) / SCALE;
     }
@@ -58,8 +57,10 @@ contract MatchTokenPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable,
     function userClaimableAmount(address _user) public view returns (uint256) {
         uint256 allocation = totalPublicAllocation();
 
+        // If not received any ether, no claimable amount
         if (totalEthersReceived == 0) return 0;
 
+        // If the user has not purchased or already claimed, no claimable amount
         if (users[_user].amount == 0 || users[_user].claimed) {
             return 0;
         }
@@ -111,11 +112,20 @@ contract MatchTokenPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable,
         emit PublicSaleInitialized(matchTokenAllocated);
     }
 
+    /**
+     * @notice Purchase match tokens by sending ethers
+     *
+     *
+     */
     function purchase() external payable nonReentrant {
-        require(_withinPeriod(), "IDO public sale is not started or finished");
+        require(_withinPeriod(), "IDO public sale not start/finish");
         require(msg.value > 0, "No ether sent");
         require(ethTargetAmount > 0, "Public sale not initialized");
 
+        // Check if overflow
+        require(totalEthersReceived + msg.value <= ethTargetAmount, "ETH cap exceeded");
+
+        // Update user and total record
         users[msg.sender].amount += msg.value;
         totalEthersReceived += msg.value;
 
@@ -125,7 +135,7 @@ contract MatchTokenPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable,
     // Allocate match tokens to users and then can be claimed
     // Only after the public round is also finished
     function allocateMatchTokens() external onlyOwner {
-        require(block.timestamp > PUB_END, "IDO is not finished yet");
+        require(block.timestamp > PUB_END, "IDO public sale not finished");
 
         uint256 allocation = totalPublicAllocation();
         IERC20(matchToken).safeTransferFrom(msg.sender, address(this), allocation);

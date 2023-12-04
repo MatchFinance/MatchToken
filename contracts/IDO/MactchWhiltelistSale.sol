@@ -4,7 +4,6 @@ pragma solidity =0.8.21;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -56,7 +55,7 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         // Total ETH = Min(375ETH, Ethers Received by WL & Public)
         // Total Match = 1500000 (fixed)
         uint256 portionToWhitelist = (totalEthersReceived * SCALE) /
-            Math.min(totalEthersReceivedByPublic + totalEthersReceived, ETH_CAP_TOTAL);
+            (totalEthersReceivedByPublic + totalEthersReceived);
 
         return (MATCH_CAP_TOTAL * portionToWhitelist) / SCALE;
     }
