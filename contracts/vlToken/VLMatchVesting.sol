@@ -15,12 +15,15 @@ contract VLMatchVesting {
 
     address public matchToken;
     address public vlMatch;
+    address public treasury;
 
     struct UserInfo {
         uint256 stakedMatchAmount;
         uint256 stakedVLMatchAmount;
         uint256 rewardDebt;
+        uint256 incomeDebt;
         uint256 pendingReward;
+        uint256 pendingIncome;
     }
     mapping(address => UserInfo) public users;
 
@@ -29,18 +32,23 @@ contract VLMatchVesting {
 
     uint256 public accRewardPerVLMatch;
 
+    address public incomeToken;
+    uint256 public totalProtocolIncome;
+    uint256 public accProtocolIncomePerVLMatch;
+
     struct VestingInfo {
         uint256 startTime;
         uint256 amount;
     }
-    mapping(bytes32 => VestingInfo) public vestings;
+    mapping(bytes32 vestingId => VestingInfo vestingInfo) public vestings;
 
     // Total vestings of a user
-    mapping(address => uint256) public totalVested;
+    mapping(address user => uint256 totalVestings) public userVestingCount;
 
     event RewardClaimed(address indexed user, uint256 amount);
     event MatchTokenStaked(address indexed user, uint256 amount);
     event VLMatchStaked(address indexed user, uint256 amount);
+    event VestingStarted(address indexed user, uint256 amount);
     event ClaimFromVesting(address indexed user, uint256 index, uint256 vestedAmount, uint256 penaltyAmount);
 
     /**
@@ -51,67 +59,9 @@ contract VLMatchVesting {
         return accRewardPerVLMatch * stakedAmount - users[msg.sender].rewardDebt;
     }
 
-    /**
-     * @notice Update a user's pending reward
-     *         Called when a user stake more vlMatch or claim reward
-     *
-     *         Every time after calling this function, need to update the reward debt
-     *
-     * @param _user User address
-     */
-    function updateReward(address _user) public {
-        uint256 pending = pendingReward(_user);
-
-        UserInfo storage user = users[_user];
-
-        // Only update pending reward record, the real claim happens in claimReward()
-        user.pendingReward += pending;
-    }
-
-    function claimReward() public {
-        updateReward(msg.sender);
-
-        UserInfo storage user = users[msg.sender];
-
-        // Mint more vlMatch to the user as reward
-        IVLMatch(vlMatch).mint(msg.sender, user.pendingReward);
-
-        emit RewardClaimed(msg.sender, user.pendingReward);
-
-        // Clear the record
-        user.pendingReward = 0;
-        user.rewardDebt = accRewardPerVLMatch * user.stakedVLMatchAmount;
-    }
-
-    function stakeMatchAndVLMatch(uint256 _amount) external {
-        stakeMatchToken(_amount);
-        stakeVLMatch(_amount);
-    }
-
-    // Stake match token and get 1:1 vlMatch
-    function stakeMatchToken(uint256 _amount) public {
-        require(_amount > 0, "Amount must be greater than 0");
-
-        IERC20(matchToken).safeTransferFrom(msg.sender, address(this), _amount);
-
-        users[msg.sender].stakedMatchAmount += _amount;
-
-        // 1:1 mint vlMatch token
-        IVLMatch(vlMatch).mint(msg.sender, _amount);
-
-        emit MatchTokenStaked(msg.sender, _amount);
-    }
-
-    function stakeVLMatch(uint256 _amount) public {
-        updateReward(msg.sender);
-
-        users[msg.sender].stakedVLMatchAmount += _amount;
-        totalStakedVLMatch += _amount;
-
-        // Record the current reward debt
-        users[msg.sender].rewardDebt = accRewardPerVLMatch * users[msg.sender].stakedVLMatchAmount;
-
-        emit VLMatchStaked(msg.sender, _amount);
+    function pendingProtocolIncome(address _user) public view returns (uint256) {
+        uint256 stakedAmount = users[_user].stakedVLMatchAmount;
+        return accProtocolIncomePerVLMatch * stakedAmount - users[msg.sender].incomeDebt;
     }
 
     /**
@@ -136,6 +86,46 @@ contract VLMatchVesting {
         return 99 * (SCALE - (timePassed * SCALE) / FULL_VESTING_TIME);
     }
 
+    /**
+     * @notice Stake match token and vlMatch at the same time
+     *         Match -> vlMatch(unstaked) -> vlMatch(staked)
+     *
+     * @param _amount Amount of match token to stake
+     */
+    function stakeMatchAndVLMatch(uint256 _amount) external {
+        stakeMatchToken(_amount);
+        stakeVLMatch(_amount);
+    }
+
+    // Stake match token and get 1:1 vlMatch
+    function stakeMatchToken(uint256 _amount) public {
+        require(_amount > 0, "Amount must be greater than 0");
+
+        IERC20(matchToken).safeTransferFrom(msg.sender, address(this), _amount);
+
+        users[msg.sender].stakedMatchAmount += _amount;
+        totalStakedMatch += _amount;
+
+        // 1:1 mint vlMatch token
+        IVLMatch(vlMatch).mint(msg.sender, _amount);
+
+        emit MatchTokenStaked(msg.sender, _amount);
+    }
+
+    function stakeVLMatch(uint256 _amount) public {
+        _updateReward(msg.sender);
+        _updateProtocolIncome(msg.sender);
+
+        users[msg.sender].stakedVLMatchAmount += _amount;
+        totalStakedVLMatch += _amount;
+
+        // Record the current reward debt
+        users[msg.sender].rewardDebt = accRewardPerVLMatch * users[msg.sender].stakedVLMatchAmount;
+        users[msg.sender].incomeDebt = accProtocolIncomePerVLMatch * users[msg.sender].stakedVLMatchAmount;
+
+        emit VLMatchStaked(msg.sender, _amount);
+    }
+
     // Vest vlMatch
     function startVesting(uint256 _amount) external {
         require(_amount > 0, "Amount must be greater than 0");
@@ -146,13 +136,15 @@ contract VLMatchVesting {
         VestingInfo memory vesting = VestingInfo({ startTime: block.timestamp, amount: _amount });
 
         // Get vesting id by hashing user address and current vesting id
-        bytes32 vestingId = _getVestingId(msg.sender, totalVested[msg.sender]);
+        bytes32 vestingId = _getVestingId(msg.sender, userVestingCount[msg.sender]);
         vestings[vestingId] = vesting;
 
-        totalVested[msg.sender]++;
+        userVestingCount[msg.sender]++;
 
         users[msg.sender].stakedVLMatchAmount -= _amount;
         totalStakedVLMatch -= _amount;
+
+        emit VestingStarted(msg.sender, _amount);
     }
 
     /**
@@ -181,6 +173,61 @@ contract VLMatchVesting {
         vestings[vestingId].amount = 0;
 
         emit ClaimFromVesting(msg.sender, _index, availableAmount, penaltyAmount);
+    }
+
+    /**
+     * @notice New protocol income comes in from treasury
+     */
+    function newProtocolIncome(uint256 _amount) external {
+        require(msg.sender == treasury, "Not treasury");
+
+        totalProtocolIncome += _amount;
+
+        accProtocolIncomePerVLMatch += _amount / totalStakedVLMatch;
+    }
+
+    /**
+     * @notice Claim reward
+     *         Comes from 1) Others' vesting penalty
+     *                    2) Protocol income
+     */
+    function claimReward() public {
+        _updateReward(msg.sender);
+        _updateProtocolIncome(msg.sender);
+
+        UserInfo storage user = users[msg.sender];
+
+        // Mint more vlMatch to the user as reward
+        IVLMatch(vlMatch).mint(msg.sender, user.pendingReward);
+        IERC20(incomeToken).safeTransfer(msg.sender, user.pendingIncome);
+
+        emit RewardClaimed(msg.sender, user.pendingReward);
+
+        // Clear the record
+        user.pendingReward = 0;
+        user.rewardDebt = accRewardPerVLMatch * user.stakedVLMatchAmount;
+    }
+
+    /**
+     * @notice Update a user's pending reward
+     *         Called when a user stake more vlMatch or claim reward
+     *
+     *         ! Every time after calling this function, need to update the reward debt manually
+     *
+     * @param _user User address
+     */
+    function _updateReward(address _user) internal {
+        uint256 pending = pendingReward(_user);
+
+        // Only update pending reward record, the real claim happens in claimReward()
+        users[_user].pendingReward += pending;
+    }
+
+    function _updateProtocolIncome(address _user) internal {
+        uint256 pending = pendingProtocolIncome(_user);
+
+        // Only update pending reward record, the real claim happens in claimReward()
+        users[_user].pendingIncome += pending;
     }
 
     function _getVestingId(address _user, uint256 _index) internal pure returns (bytes32) {

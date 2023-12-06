@@ -7,6 +7,11 @@ import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC2
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/**
+ * @notice Value-locked Match Token
+ *
+ * @dev Can mint/burn, but can not transfer
+ */
 contract VLMatch is OwnableUpgradeable, ERC20Upgradeable {
     using SafeERC20 for IERC20;
 
