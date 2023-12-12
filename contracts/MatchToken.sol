@@ -9,6 +9,14 @@ contract MatchToken is ERC20, Ownable {
     mapping(address => bool) public isMinter;
     mapping(address => bool) public isBurner;
 
+
+
+    event MinterAdded(address indexed newMinter);
+    event MinterRemoved(address indexed removedMinter);
+
+    event BurnerAdded(address indexed newBurner);
+    event BurnerRemoved(address indexed removedBurner);
+
     event Mint(address indexed to, uint256 amount);
     event Burn(address indexed from, uint256 amount);
 
@@ -20,18 +28,26 @@ contract MatchToken is ERC20, Ownable {
 
     function addMinter(address _newMinter) external onlyOwner {
         isMinter[_newMinter] = true;
+
+        emit MinterAdded(_newMinter);
     }
 
     function removeMinter(address _minter) external onlyOwner {
         isMinter[_minter] = false;
+
+        emit MinterRemoved(_minter);
     }
 
     function addBurner(address _newBurner) external onlyOwner {
         isBurner[_newBurner] = true;
+
+        emit BurnerAdded(_newBurner);
     }
 
     function removeBurner(address _burner) external onlyOwner {
         isBurner[_burner] = false;
+
+        emit BurnerRemoved(_burner);
     }
 
     function mint(address _to, uint256 _amount) external {
