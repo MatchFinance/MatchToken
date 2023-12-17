@@ -6,10 +6,11 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MatchToken is ERC20, Ownable {
-    mapping(address => bool) public isMinter;
-    mapping(address => bool) public isBurner;
+    // Total supply cap is 10 million
+    uint256 public constant TOTAL_SUPPLY = 10_000_000 ether;
 
-
+    mapping(address user => bool isMinter) public isMinter;
+    mapping(address user => bool isBurner) public isBurner;
 
     event MinterAdded(address indexed newMinter);
     event MinterRemoved(address indexed removedMinter);
@@ -52,6 +53,8 @@ contract MatchToken is ERC20, Ownable {
 
     function mint(address _to, uint256 _amount) external {
         require(isMinter[msg.sender], "Not a minter");
+        require(totalSupply() + _amount <= TOTAL_SUPPLY, "Total supply cap exceeded");
+
         _mint(_to, _amount);
 
         emit Mint(_to, _amount);
@@ -59,6 +62,7 @@ contract MatchToken is ERC20, Ownable {
 
     function burn(address _from, uint256 _amount) external {
         require(isBurner[msg.sender], "Not a burner");
+        
         _burn(_from, _amount);
 
         emit Burn(_from, _amount);
