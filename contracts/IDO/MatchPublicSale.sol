@@ -9,7 +9,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { IMatchWhitelistSale } from "../interfaces/IMatchWhitelistSale.sol";
 import { IDOConstants } from "./IDOConstants.sol";
 
-contract MatchTokenPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOConstants {
+contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOConstants {
     using SafeERC20 for IERC20;
 
     uint256 ethTargetAmount;
