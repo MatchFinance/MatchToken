@@ -16,6 +16,8 @@ describe("Unit tests for Match Token IDO", function () {
     this.signers.admin = signers[0];
     this.signers.user1 = signers[1];
     this.signers.user2 = signers[2];
+    this.signers.user3 = signers[3];
+    this.signers.user4 = signers[4];
   });
 
   describe("Whitelist Sale", function () {
@@ -75,6 +77,47 @@ describe("Unit tests for Match Token IDO", function () {
       await expect(whitelistSale.connect(this.signers.user1).purchase(proof, { value: toWei(1) })).to.be.revertedWith(
         "IDO is not started or finished",
       );
+
+      expect(await whitelistSale.totalWhitelistAllocation()).to.equal(toWei(1500000));
+    });
+
+    it("should allow users to participate in public sale", async function () {
+      const { whitelistSale, publicSale } = await loadFixture(deployIDOContracts);
+
+      // #
+      // # Whitelist sale preparation
+      // # Whitelist sale get 1 ETH, publcic sale should have 374 ether cap
+      // #
+      const whitelist = [this.signers.user1.address, this.signers.user2.address];
+      const leaves = whitelist.map((account) => ethers.keccak256(account));
+      const tree = new MerkleTree(leaves, ethers.keccak256, { sort: true });
+      const root = tree.getHexRoot();
+      await whitelistSale.setMerkleRoot(root);
+      const proof = tree.getHexProof(ethers.keccak256(this.signers.user1.address));
+
+      await time.setNextBlockTimestamp((await whitelistSale.WL_START()) + 1n);
+      await whitelistSale.connect(this.signers.user1).purchase(proof, { value: toWei(1) });
+
+      await time.setNextBlockTimestamp((await publicSale.PUB_START()) + 1n);
+      await publicSale.initializePublicSale();
+
+      // # Check initial status of public sale
+      expect(await publicSale.ethTargetAmount()).to.equal(toWei(374));
+
+      await expect(publicSale.connect(this.signers.user1).purchase({ value: toWei(1) }))
+        .to.emit(publicSale, "PublicRoundPurchased")
+        .withArgs(this.signers.user1.address, toWei(1));
+
+      expect(await publicSale.totalEthersReceived()).to.equal(toWei(1));
+      expect((await publicSale.users(this.signers.user1.address)).amount).to.equal(toWei(1));
+
+      await expect(publicSale.connect(this.signers.user2).purchase({ value: toWei(374) })).to.be.revertedWith(
+        "ETH cap exceeded",
+      );
+
+      await expect(publicSale.connect(this.signers.user1).purchase({ value: toWei(373) }))
+        .to.emit(publicSale, "PublicRoundPurchased")
+        .withArgs(this.signers.user1.address, toWei(373));
     });
   });
 });
