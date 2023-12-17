@@ -98,7 +98,7 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
     function purchase(bytes32[] memory _proof) public payable nonReentrant {
         require(_withinPeriod(), "IDO is not started or finished");
         require(msg.value > 0, "No ether sent");
-        require(totalEthersReceived + msg.value <= ETH_CAP_TOTAL, "ETH cap exceeded");
+        require(totalEthersReceived + msg.value <= ETH_CAP_WL, "ETH cap exceeded");
 
         // Verify if the user provides correct proof
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender));

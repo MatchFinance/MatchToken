@@ -12,9 +12,13 @@ abstract contract IDOConstants {
     // Maximum 75 ETH will be received by IDO Whitelist Round
     uint256 public constant ETH_CAP_WL = 75 ether;
 
-    uint256 public constant WL_START = 0;
-    uint256 public constant WL_END = 0;
-
-    uint256 public constant PUB_START = 0;
-    uint256 public constant PUB_END = 0;
+    // 2023-12-22 22:00 (UTC+8)
+    uint256 public constant WL_START = 1703253600;
+    // 2023-12-23 10:00 (UTC+8)
+    uint256 public constant WL_END = 1703296800;
+    
+    // 2023-12-23 10:00 (UTC+8)
+    uint256 public constant PUB_START = 1703296800;
+    // 2023-12-25 
+    uint256 public constant PUB_END = 1703512800;
 }

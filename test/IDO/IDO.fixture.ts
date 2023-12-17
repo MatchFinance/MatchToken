@@ -12,10 +12,12 @@ export async function deployIDOContracts(): Promise<{
 
   const whitelistSaleFactory = await ethers.getContractFactory("MatchWhitelistSale");
   const whitelistSale = await whitelistSaleFactory.connect(admin).deploy();
+  await whitelistSale.waitForDeployment();
   await whitelistSale.initialize();
 
   const publicSaleFactory = await ethers.getContractFactory("MatchPublicSale");
   const publicSale = await publicSaleFactory.connect(admin).deploy();
+  await publicSale.waitForDeployment();
   await publicSale.initialize();
 
   return { whitelistSale, publicSale };
