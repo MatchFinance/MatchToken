@@ -96,13 +96,13 @@ describe("Unit tests for Match Token IDO", function () {
       const proof = tree.getHexProof(ethers.keccak256(this.signers.user1.address));
 
       await time.setNextBlockTimestamp((await whitelistSale.WL_START()) + 1n);
-      await whitelistSale.connect(this.signers.user1).purchase(proof, { value: toWei(1) });
+      await whitelistSale.connect(this.signers.user1).purchase(proof, { value: toWei(15) });
 
       await time.setNextBlockTimestamp((await publicSale.PUB_START()) + 1n);
       await publicSale.initializePublicSale();
 
       // # Check initial status of public sale
-      expect(await publicSale.ethTargetAmount()).to.equal(toWei(374));
+      expect(await publicSale.ethTargetAmount()).to.equal(toWei(360));
 
       await expect(publicSale.connect(this.signers.user1).purchase({ value: toWei(1) }))
         .to.emit(publicSale, "PublicRoundPurchased")
@@ -111,13 +111,65 @@ describe("Unit tests for Match Token IDO", function () {
       expect(await publicSale.totalEthersReceived()).to.equal(toWei(1));
       expect((await publicSale.users(this.signers.user1.address)).amount).to.equal(toWei(1));
 
-      await expect(publicSale.connect(this.signers.user2).purchase({ value: toWei(374) })).to.be.revertedWith(
+      // # Can not buy 374 eth, because 1 + 1 + 374 = 376 > 375, exceed public sale cap
+      await expect(publicSale.connect(this.signers.user2).purchase({ value: toWei(360) })).to.be.revertedWith(
         "ETH cap exceeded",
       );
 
-      await expect(publicSale.connect(this.signers.user1).purchase({ value: toWei(373) }))
+      // # Can buy 373 eth, 1 + 1 + 373 = 375 <= 375, not exceed public sale cap
+      await expect(publicSale.connect(this.signers.user1).purchase({ value: toWei(359) }))
         .to.emit(publicSale, "PublicRoundPurchased")
-        .withArgs(this.signers.user1.address, toWei(373));
+        .withArgs(this.signers.user1.address, toWei(359));
+
+      expect(await publicSale.currentMatchPrice()).to.equal(toWei(0.00025));
+
+      // # whitelist sale 15 eth, public sale 360 eth
+      // # allocation should be: 60000 + 1440000 = 1500000 Match Token
+      expect(await publicSale.totalPublicAllocation()).to.equal(toWei(1440000));
+      expect(await whitelistSale.totalWhitelistAllocation()).to.equal(toWei(60000));
+    });
+
+    it("should be able to allocate tokens and claim tokens", async function () {
+      const { whitelistSale, publicSale } = await loadFixture(deployIDOContracts);
+      const { matchToken } = await loadFixture(deployMatchTokenFixture);
+
+      const whitelist = [this.signers.user1.address, this.signers.user2.address];
+      const leaves = whitelist.map((account) => ethers.keccak256(account));
+      const tree = new MerkleTree(leaves, ethers.keccak256, { sort: true });
+      const root = tree.getHexRoot();
+      await whitelistSale.setMerkleRoot(root);
+      const proof = tree.getHexProof(ethers.keccak256(this.signers.user1.address));
+
+      await time.setNextBlockTimestamp((await whitelistSale.WL_START()) + 1n);
+      await whitelistSale.connect(this.signers.user1).purchase(proof, { value: toWei(75) });
+
+      await time.setNextBlockTimestamp((await publicSale.PUB_START()) + 1n);
+      await publicSale.initializePublicSale();
+
+      await publicSale.connect(this.signers.user2).purchase({ value: toWei(300) });
+
+      // # whitelist 75 eth by user1
+      // # public sale 300 eth by user2
+
+      await time.setNextBlockTimestamp((await publicSale.PUB_END()) + 1n);
+
+      await whitelistSale.setMatchToken(matchToken.getAddress());
+      await publicSale.setMatchToken(matchToken.getAddress());
+
+      await matchToken.addMinter(this.signers.admin.address);
+      await matchToken.mint(this.signers.admin.address, toWei(1500000));
+
+      await matchToken.approve(whitelistSale.getAddress(), toWei(1500000));
+
+      console.log(this.signers.admin);
+
+      await expect(whitelistSale.allocateMatchTokens())
+        .to.emit(whitelistSale, "MatchTokenAllocated")
+        .withArgs(toWei(300000));
+
+      await matchToken.approve(publicSale.getAddress(), toWei(1500000));
+
+      await expect(publicSale.allocateMatchTokens()).to.emit(publicSale, "MatchTokenAllocated").withArgs(toWei(1200000));
     });
   });
 });

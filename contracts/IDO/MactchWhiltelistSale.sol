@@ -72,6 +72,14 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         return (allocation * users[_user].amount) / totalEthersReceived;
     }
 
+    function currentMatchPrice() public view returns (uint256) {
+        uint256 ethersReceivedByPublicSale = IMatchPublicSale(matchPublicSale).totalEthersReceived();
+
+        uint256 totalEthers = totalEthersReceived + ethersReceivedByPublicSale;
+
+        return (totalEthers * SCALE) / MATCH_CAP_TOTAL;
+    }
+
     function setMatchToken(address _matchToken) external onlyOwner {
         matchToken = _matchToken;
     }
@@ -95,7 +103,7 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         require(success, "Claim failed");
     }
 
-    function purchase(bytes32[] memory _proof) public payable nonReentrant {
+    function purchase(bytes32[] memory _proof) external payable nonReentrant {
         require(_withinPeriod(), "IDO is not started or finished");
         require(msg.value > 0, "No ether sent");
         require(totalEthersReceived + msg.value <= ETH_CAP_WL, "ETH cap exceeded");

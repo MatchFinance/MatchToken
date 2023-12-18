@@ -68,28 +68,10 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
         return (allocation * users[_user].amount) / totalEthersReceived;
     }
 
-    // function refundAmount(address _user) public view returns (uint256) {
-    //     if (totalEthersReceived <= ethTargetAmount) return 0;
-    //     if (users[_user].claimed) return 0;
-
-    //     // Only if total ethers received exceeeds the cap, refund will be available
-    //     // e.g. CAP = 300 ETH, totalEthersReceived = 600 ETH
-    //     //      will refund the user half of his contribution
-    //     return users[_user].amount - (ethTargetAmount * users[_user].amount) / totalEthersReceived;
-    // }
-
-    // function totalRefundAmount() public view returns (uint256) {
-    //     return totalEthersReceived > ethTargetAmount ? (totalEthersReceived - ethTargetAmount) : 0;
-    // }
-
-    // Current match token price is calculated with both wl and public sale status
-    // price = (totalEthersReceived * SCALE) / MATCH_CAP_TOTAL
     function currentMatchPrice() public view returns (uint256) {
         uint256 ethersReceivedByWhitelist = IMatchWhitelistSale(matchWhitelistSale).totalEthersReceived();
 
-        uint256 totalEthers = totalEthersReceived > ethTargetAmount
-            ? (ethTargetAmount + ethersReceivedByWhitelist)
-            : (totalEthersReceived + ethersReceivedByWhitelist);
+        uint256 totalEthers = totalEthersReceived + ethersReceivedByWhitelist;
 
         return (totalEthers * SCALE) / MATCH_CAP_TOTAL;
     }
