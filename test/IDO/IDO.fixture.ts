@@ -20,8 +20,11 @@ export async function deployIDOContracts(): Promise<{
   await publicSale.waitForDeployment();
   await publicSale.initialize();
 
-  await whitelistSale.setMatchPublicSaleContract(publicSale.getAddress());
-  await publicSale.setMatchWhitelistSale(whitelistSale.getAddress());
+  // const publicSaleAddress = await publicSale.getAddress();
+  // const whitelistSaleAddress = await whitelistSale.getAddress();
+
+  await whitelistSale.setMatchPublicSaleContract(publicSale.target);
+  await publicSale.setMatchWhitelistSale(whitelistSale.target);
 
   return { whitelistSale, publicSale };
 }

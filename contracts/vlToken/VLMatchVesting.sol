@@ -2,11 +2,12 @@
 
 pragma solidity =0.8.21;
 
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IVLMatch } from "../interfaces/IVLMatch.sol";
 
-contract VLMatchVesting {
+contract VLMatchVesting is OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     uint256 public constant SCALE = 1e18;
@@ -51,6 +52,10 @@ contract VLMatchVesting {
     event VestingStarted(address indexed user, uint256 amount);
     event ClaimFromVesting(address indexed user, uint256 index, uint256 vestedAmount, uint256 penaltyAmount);
 
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+    }
+
     /**
      * @notice Calculate a user's pending reward
      */
@@ -86,6 +91,18 @@ contract VLMatchVesting {
         return 99 * (SCALE - (timePassed * SCALE) / FULL_VESTING_TIME);
     }
 
+    function setMatchToken(address _matchToken) external onlyOwner {
+        matchToken = _matchToken;
+    }
+
+    function setVLMatch(address _vlMatch) external onlyOwner {
+        vlMatch = _vlMatch;
+    }
+
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+    }
+
     /**
      * @notice Stake match token and vlMatch at the same time
      *         Match -> vlMatch(unstaked) -> vlMatch(staked)
@@ -113,8 +130,12 @@ contract VLMatchVesting {
     }
 
     function stakeVLMatch(uint256 _amount) public {
+        require(_amount > 0, "Amount must be greater than 0");
+
         _updateReward(msg.sender);
         _updateProtocolIncome(msg.sender);
+
+        IVLMatch(vlMatch).lock(msg.sender, _amount);
 
         users[msg.sender].stakedVLMatchAmount += _amount;
         totalStakedVLMatch += _amount;
@@ -131,6 +152,7 @@ contract VLMatchVesting {
         require(_amount > 0, "Amount must be greater than 0");
         require(users[msg.sender].stakedVLMatchAmount >= _amount, "Not enough staked vlMatch");
 
+        IVLMatch(vlMatch).unlock(msg.sender, _amount);
         IVLMatch(vlMatch).burn(msg.sender, _amount);
 
         VestingInfo memory vesting = VestingInfo({ startTime: block.timestamp, amount: _amount });

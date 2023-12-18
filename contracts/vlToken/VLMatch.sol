@@ -19,12 +19,22 @@ contract VLMatch is OwnableUpgradeable, ERC20Upgradeable {
     // 1: Mint & burn power
     mapping(address => uint256) public roles;
 
+    mapping(address => uint256) public staked;
+
     function initialize() public initializer {
         __Ownable_init(msg.sender);
         __ERC20_init("Value Locked Match Token", "vlMatch");
 
         // Give the owner the mint/burn power
         roles[msg.sender] = 1;
+    }
+
+    function nonLockedBalance(address _user) external view returns (uint256) {
+        return balanceOf(_user) - staked[_user];
+    }
+
+    function setRole(address _user) external onlyOwner {
+        roles[_user] = 1;
     }
 
     function mint(address _to, uint256 _amount) external {
@@ -35,6 +45,17 @@ contract VLMatch is OwnableUpgradeable, ERC20Upgradeable {
     function burn(address _to, uint256 _amount) external {
         require(roles[msg.sender] == 1, "Not a burner");
         _burn(_to, _amount);
+    }
+
+    function lock(address _user, uint256 _amount) external {
+        require(roles[msg.sender] == 1, "Not a locker");
+        require(staked[_user] + _amount <= balanceOf(_user), "Not enough balance to lock");
+        staked[_user] += _amount;
+    }
+
+    function unlock(address _user, uint256 _amount) external {
+        require(roles[msg.sender] == 1, "Not an unlocker");
+        staked[_user] -= _amount;
     }
 
     // Transfer is not allowed for vlMatch
