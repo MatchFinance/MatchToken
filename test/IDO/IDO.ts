@@ -116,9 +116,7 @@ describe("Unit tests for Match Token IDO", function () {
       expect((await publicSale.users(user1.address)).amount).to.equal(toWei(1));
 
       // # Can not buy 374 eth, because 1 + 1 + 374 = 376 > 375, exceed public sale cap
-      await expect(publicSale.connect(user2).purchase({ value: toWei(360) })).to.be.revertedWith(
-        "ETH cap exceeded",
-      );
+      await expect(publicSale.connect(user2).purchase({ value: toWei(360) })).to.be.revertedWith("ETH cap exceeded");
 
       // # Can buy 373 eth, 1 + 1 + 373 = 375 <= 375, not exceed public sale cap
       await expect(publicSale.connect(user1).purchase({ value: toWei(359) }))
@@ -174,6 +172,14 @@ describe("Unit tests for Match Token IDO", function () {
       await expect(publicSale.allocateMatchTokens())
         .to.emit(publicSale, "MatchTokenAllocated")
         .withArgs(toWei(1200000));
+
+      expect(await whitelistSale.connect(user1).claim())
+        .to.emit(whitelistSale, "MatchTokenClaimed")
+        .withArgs(user1.address, toWei(300000));
+
+      expect(await publicSale.connect(user2).claim())
+        .to.emit(publicSale, "MatchTokenClaimed")
+        .withArgs(user2.address, toWei(1200000));
     });
   });
 });

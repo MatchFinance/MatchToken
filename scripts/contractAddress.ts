@@ -24,5 +24,8 @@ export const clearAddressList = function () {
   fs.writeFileSync("info/address.json", JSON.stringify(emptyList, null, "\t"));
 };
 
-
+export const readWhitelist = function () {
+    return JSON.parse(fs.readFileSync("info/whitelist.json", "utf-8"));
+  };
+  
 

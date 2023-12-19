@@ -17,10 +17,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   network.name = network.name == "hardhat" ? "localhost" : network.name;
 
   const { deployer } = await getNamedAccounts();
-  
+
   const addressList = readAddressList();
 
-  const proxyAdmin = await deploy("ProxyAdmin", {
+  const proxyAdmin = await deploy("MyProxyAdmin", {
     contract: "MyProxyAdmin",
     from: deployer,
     args: [],
@@ -31,5 +31,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   storeAddressList(addressList);
 };
 
-func.tags = ["ProxyAdmin"];
+func.tags = ["MyProxyAdmin"];
 export default func;

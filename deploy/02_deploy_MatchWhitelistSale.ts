@@ -21,8 +21,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const addressList = readAddressList();
 
   const proxyOptions: ProxyOptions = {
-    proxyContract: "TransparentUpgradeableProxy",
-    viaAdminContract: { name: "ProxyAdmin", artifact: "MyProxyAdmin" },
+    proxyContract: "OpenZeppelinTransparentProxy",
+    // viaAdminContract: { name: "MyProxyAdmin", artifact: "MyProxyAdmin" },
     execute: {
       init: {
         methodName: "initialize",

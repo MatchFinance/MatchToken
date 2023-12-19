@@ -5,9 +5,7 @@ import type { HardhatUserConfig } from "hardhat/config";
 import { vars } from "hardhat/config";
 import type { NetworkUserConfig } from "hardhat/types";
 
-import "./tasks/accounts";
-import "./tasks/greet";
-import "./tasks/taskDeploy";
+import "./tasks/ido";
 
 dotenv.config();
 
@@ -27,9 +25,12 @@ const chainIds = {
 function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
   let jsonRpcUrl: string;
   switch (chain) {
+    case "sepolia":
+      jsonRpcUrl = "https://endpoints.omniatech.io/v1/eth/sepolia/public";
+      break;
     default:
-      // jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
-      jsonRpcUrl = "https://" + chain + ".gateway.tenderly.co/" + tenderlyKey;
+      jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
+    // jsonRpcUrl = "https://" + chain + ".gateway.tenderly.co/" + tenderlyKey;
   }
   return {
     accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],

@@ -1,9 +1,14 @@
 {
 	"mainnet": {},
 	"sepolia": {
-		"ProxyAdmin": "0x665512EB153006aFF4b49abb2556c2158127A1a2",
-		"MatchToken": "0xB4Ae3FB3a1AC2Be65aCC37C40727B5EEaC93A93a",
-		"MatchWhitelistSale": "0x79B3C78E9f5FE4bB0D1A8EF6F0Bff1beB53C38cE",
-		"MatchPublicSale": "0x9c1440273102058f4eD8998D4D459feaEa2927dA"
+		"ProxyAdmin": "0xb382a329B5B6F5ff6A50b56d9c462EA2C34ec374",
+		"MatchToken": "0xafEAD1d7e31A13fA839e66fFff437D4cfC9335E0",
+		"MatchWhitelistSale": "0x2091B257336062da65D38A558BC99219E072766D",
+		"MatchPublicSale": "0xC2cb8659779cAeFa4E7dFbBA862728600CD44028"
+	},
+	"localhost": {
+		"ProxyAdmin": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+		"MatchWhitelistSale": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+		"MatchToken": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
 	}
 }

@@ -34,12 +34,12 @@ abstract contract IDOTestConstants {
     uint256 public constant ETH_CAP_WL = 0.5 ether;
 
     // 2023-12-19 14:00 (UTC+8)
-    uint256 public constant WL_START = 1702965600;
+    uint256 public constant WL_START = 1702972800;
     // 2023-12-19 14:30 (UTC+8)
-    uint256 public constant WL_END = 1702967400;
+    uint256 public constant WL_END = 1702974600;
 
     // 2023-12-19 14:30 (UTC+8)
-    uint256 public constant PUB_START = 1702967400;
+    uint256 public constant PUB_START = 1702974600;
     // 2023-12-19 15:00 (UTC+8)
-    uint256 public constant PUB_END = 1702969200;
+    uint256 public constant PUB_END = 1702976400;
 }
