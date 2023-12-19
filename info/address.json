@@ -1,0 +1,9 @@
+{
+	"mainnet": {},
+	"sepolia": {
+		"ProxyAdmin": "0x665512EB153006aFF4b49abb2556c2158127A1a2",
+		"MatchToken": "0xB4Ae3FB3a1AC2Be65aCC37C40727B5EEaC93A93a",
+		"MatchWhitelistSale": "0x79B3C78E9f5FE4bB0D1A8EF6F0Bff1beB53C38cE",
+		"MatchPublicSale": "0x9c1440273102058f4eD8998D4D459feaEa2927dA"
+	}
+}

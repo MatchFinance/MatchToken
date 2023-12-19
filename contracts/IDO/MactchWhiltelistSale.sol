@@ -8,9 +8,9 @@ import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerklePr
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IMatchPublicSale } from "../interfaces/IMatchPublicSale.sol";
-import { IDOConstants } from "./IDOConstants.sol";
+import { IDOConstants, IDOTestConstants } from "./IDOConstants.sol";
 
-contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOConstants {
+contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOTestConstants {
     using SafeERC20 for IERC20;
 
     uint256 public totalEthersReceived;

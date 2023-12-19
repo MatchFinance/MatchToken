@@ -68,17 +68,21 @@ describe("Unit tests for vlMatch and vesting", function () {
       await vlMatch.mint(user1.address, toWei(100));
       await vlMatch.connect(user1).approve(vlMatchVesting.target, toWei(100));
 
+      // # Can not stake zero amount vlMatch
       await expect(vlMatchVesting.connect(user1).stakeVLMatch(toWei(0))).to.be.reverted;
 
+      // # Can stake 100 vlMatch successfully
       await expect(vlMatchVesting.connect(user1).stakeVLMatch(toWei(100)))
         .to.emit(vlMatchVesting, "VLMatchStaked")
         .withArgs(user1.address, toWei(100));
 
       expect(await vlMatchVesting.totalStakedVLMatch()).to.equal(toWei(100));
 
+      // # Staked vlMatch has been locked
       expect(await vlMatch.balanceOf(user1.address)).to.equal(toWei(100));
       expect(await vlMatch.staked(user1.address)).to.equal(toWei(100));
-      // expect(await vlMatchVesting.balanceOf(user1.address)).to.equal(toWei(100));
+
+      
     });
   });
 });
