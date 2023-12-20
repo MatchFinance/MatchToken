@@ -19,6 +19,18 @@ export const storeAddressList = function (addressList: object) {
   );
 };
 
+export const readImplList = function () {
+  // const filePath = __dirname + "/address.json"
+  return JSON.parse(fs.readFileSync("info/implementation.json", "utf-8"));
+};
+
+export const storeImplList = function (implList: object) {
+  fs.writeFileSync(
+    "info/implementation.json",
+    JSON.stringify(implList, null, "\t")
+  );
+};
+
 export const clearAddressList = function () {
   const emptyList = {};
   fs.writeFileSync("info/address.json", JSON.stringify(emptyList, null, "\t"));

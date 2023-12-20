@@ -24,16 +24,21 @@ const chainIds = {
 
 function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
   let jsonRpcUrl: string;
+  let accountsList: string[] = [];
   switch (chain) {
     case "sepolia":
       jsonRpcUrl = "https://endpoints.omniatech.io/v1/eth/sepolia/public";
+      accountsList = process.env.PK_SEPOLIA ? [process.env.PK_SEPOLIA] : [];
       break;
     default:
       jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
+      accountsList = process.env.PK_MAINNET ? [process.env.PK_MAINNET] : [];
     // jsonRpcUrl = "https://" + chain + ".gateway.tenderly.co/" + tenderlyKey;
   }
+
+
   return {
-    accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    accounts: accountsList,
     chainId: chainIds[chain],
     url: jsonRpcUrl,
   };

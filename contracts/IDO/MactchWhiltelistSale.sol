@@ -52,7 +52,7 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
     function totalWhitelistAllocation() public view returns (uint256) {
         uint256 totalEthersReceivedByPublic = IMatchPublicSale(matchPublicSale).totalEthersReceived();
 
-        // Total ETH = Min(375ETH, Ethers Received by WL & Public)
+        // Total ETH = Ethers Received by WL & Public <= 375 ETH
         // Total Match = 1500000 (fixed)
         uint256 portionToWhitelist = (totalEthersReceived * SCALE) /
             (totalEthersReceivedByPublic + totalEthersReceived);
@@ -60,11 +60,15 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         return (MATCH_CAP_TOTAL * portionToWhitelist) / SCALE;
     }
 
+    // How many match tokens can user claim
+    // This is not accurate when the sale is not end
+    // It will change with time until the sale is end
     function userClaimableAmount(address _user) public view returns (uint256) {
         uint256 allocation = totalWhitelistAllocation();
 
         if (totalEthersReceived == 0) return 0;
 
+        // If the user has not purchased or already claimed, no claimable amount
         if (users[_user].amount == 0 || users[_user].claimed) {
             return 0;
         }
@@ -72,6 +76,8 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         return (allocation * users[_user].amount) / totalEthersReceived;
     }
 
+    // Current match price
+    // It will change with time until the sale is end
     function currentMatchPrice() public view returns (uint256) {
         uint256 ethersReceivedByPublicSale = IMatchPublicSale(matchPublicSale).totalEthersReceived();
 
@@ -90,17 +96,6 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
 
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
         merkleRoot = _merkleRoot;
-    }
-
-    // Owner claim all funds out of the contract
-    function claimFund() external onlyOwner {
-        require(block.timestamp > PUB_END, "IDO is not finished yet");
-        require(!alreadyClaimedByOwner, "Already claimed by owner");
-
-        alreadyClaimedByOwner = true;
-
-        (bool success, ) = msg.sender.call{ value: address(this).balance }("");
-        require(success, "Claim failed");
     }
 
     function purchase(bytes32[] memory _proof) external payable nonReentrant {
@@ -132,7 +127,7 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
     }
 
     // Claim match tokens
-    function claim() external {
+    function claim() external nonReentrant {
         require(matchTokenAllocated > 0, "Match tokens not allocated yet");
         require(users[msg.sender].claimed == false, "Already claimed");
 
@@ -144,6 +139,17 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         IERC20(matchToken).safeTransfer(msg.sender, amountToClaim);
 
         emit MatchTokenClaimed(msg.sender, amountToClaim);
+    }
+
+    // Owner claim all funds out of the contract
+    function claimFund() external onlyOwner {
+        require(block.timestamp > PUB_END, "IDO is not finished yet");
+        require(!alreadyClaimedByOwner, "Already claimed by owner");
+
+        alreadyClaimedByOwner = true;
+
+        (bool success, ) = msg.sender.call{ value: address(this).balance }("");
+        require(success, "Claim failed");
     }
 
     function _withinPeriod() internal view returns (bool) {

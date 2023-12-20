@@ -128,7 +128,7 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
     }
 
     // Claim match tokens
-    function claim() external {
+    function claim() external nonReentrant {
         require(matchTokenAllocated > 0, "Match tokens not allocated yet");
         require(users[msg.sender].claimed == false, "Already claimed");
 
@@ -140,6 +140,17 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
         IERC20(matchToken).safeTransfer(msg.sender, amountToClaim);
 
         emit MatchTokenClaimed(msg.sender, amountToClaim);
+    }
+
+    // Owner claim all funds out of the contract
+    function claimFund() external onlyOwner {
+        require(block.timestamp > PUB_END, "IDO is not finished yet");
+        require(!alreadyClaimedByOwner, "Already claimed by owner");
+
+        alreadyClaimedByOwner = true;
+
+        (bool success, ) = msg.sender.call{ value: address(this).balance }("");
+        require(success, "Claim failed");
     }
 
     function _withinPeriod() internal view returns (bool) {

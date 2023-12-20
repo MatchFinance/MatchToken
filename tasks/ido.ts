@@ -9,23 +9,26 @@ task("setAddresses", "Set addresses in whitelist and public sale").setAction(asy
   const { network, ethers } = hre;
   const addressList = readAddressList();
 
-  const [dev] = await ethers.getSigners();
-
-  const MatchWhiliestSaleFactory = await ethers.getContractFactory("MatchWhitelistSale");
-  const matchWhitelistSale = MatchWhiliestSaleFactory.attach(
+  const matchWhitelistSale = await ethers.getContractAt(
+    "MatchWhitelistSale",
     addressList[network.name].MatchWhitelistSale,
-  ) as MatchWhitelistSale;
+  );
 
-  await hre.run("setMatchTokenInWhitelistSale");
-  await hre.run("setMatchTokenInPublicSale");
+  const tx1 = await matchWhitelistSale.setMatchPublicSaleContract(addressList[network.name].MatchPublicSale);
+  console.log(tx1.hash);
 
   const matchPublicSale = await ethers.getContractAt("MatchPublicSale", addressList[network.name].MatchPublicSale);
+  const tx2 = await matchPublicSale.setMatchWhitelistSale(addressList[network.name].MatchWhitelistSale);
+  console.log(tx2.hash);
 
-  const tx3 = await matchPublicSale.setMatchToken(addressList[network.name].MatchToken);
-  console.log(tx3.hash);
+  // await hre.run("setMatchTokenInWhitelistSale");
+  // await hre.run("setMatchTokenInPublicSale");
 
-  const tx4 = await matchPublicSale.setMatchWhitelistSale(addressList[network.name].MatchWhitelistSale);
-  console.log(tx4.hash);
+  // const tx3 = await matchPublicSale.setMatchToken(addressList[network.name].MatchToken);
+  // console.log(tx3.hash);
+
+  // const tx4 = await matchPublicSale.setMatchWhitelistSale(addressList[network.name].MatchWhitelistSale);
+  // console.log(tx4.hash);
 });
 
 task("setMatchTokenInWhitelistSale", "Set MatchToken in whitelist sale", async (_taskArgs, hre) => {

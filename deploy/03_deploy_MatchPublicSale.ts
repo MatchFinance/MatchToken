@@ -1,7 +1,7 @@
 import { DeployFunction, ProxyOptions } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import { readAddressList, storeAddressList } from "../scripts/contractAddress";
+import { readAddressList, readImplList, storeAddressList, storeImplList } from "../scripts/contractAddress";
 
 // * Deploy Match Public Sale
 // * It is a proxy deployment
@@ -19,6 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts();
 
   const addressList = readAddressList();
+  const implList = readImplList();
 
   const proxyOptions: ProxyOptions = {
     proxyContract: "OpenZeppelinTransparentProxy",
@@ -39,8 +40,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
   addressList[network.name].MatchPublicSale = matchPublicSale.address;
+  implList[network.name].MatchPublicSale = matchPublicSale.implementation;
 
   storeAddressList(addressList);
+  storeImplList(implList);
 };
 
 func.tags = ["MatchPublicSale"];

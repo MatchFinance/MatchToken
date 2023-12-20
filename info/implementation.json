@@ -1,0 +1,8 @@
+{
+	"mainnet": {
+		"MatchWhitelistSale": "0x42dD7b59f54BE7C50bFC40cB79290510a7Ec1cD0",
+		"MatchPublicSale": "0x8C3a1a3406e4F2ed7E1b5e92b9c6B0DD9dfD9B75"
+	},
+	"sepolia": {},
+	"localhost": {}
+}
