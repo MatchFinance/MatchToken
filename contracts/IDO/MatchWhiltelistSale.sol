@@ -30,9 +30,21 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
 
     struct UserInfo {
         uint256 amount;
-        bool claimed;
+        bool claimed; // ! not used, no meaning
     }
     mapping(address => UserInfo) public users;
+
+    // ! Added 2023-12-21
+    // ! Contract updated for the new vesting logic
+    uint256 public constant TGE = 30; // 30% of match tokens are released at TGE
+    uint256 public constant VESTING_TIME = 365 days; // 365 days vesting period
+
+    uint256 public tgeTimestamp;
+
+    // How many match tokens have been claimed by the user
+    mapping(address => uint256) public userClaimedAmount;
+
+    // ! End of added 2023-12-21
 
     event WhitelistRoundPurchased(address indexed user, uint256 amount);
     event MatchTokenAllocated(uint256 amount);
@@ -76,6 +88,20 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         return (allocation * users[_user].amount) / totalEthersReceived;
     }
 
+    function userCurrentRelease(address _user) public view returns (uint256) {
+        uint256 totalAmount = userClaimableAmount(_user);
+
+        if (block.timestamp <= tgeTimestamp) return 0;
+        if (block.timestamp >= tgeTimestamp + VESTING_TIME) return totalAmount;
+
+        uint256 tgeAmount = (totalAmount * TGE) / 100;
+
+        uint256 timePassed = block.timestamp - tgeTimestamp;
+        uint256 vestingAmount = ((totalAmount - tgeAmount) * timePassed) / VESTING_TIME;
+
+        return tgeAmount + vestingAmount;
+    }
+
     // Current match price
     // It will change with time until the sale is end
     function currentMatchPrice() public view returns (uint256) {
@@ -113,6 +139,10 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         emit WhitelistRoundPurchased(msg.sender, msg.value);
     }
 
+    function setTGETimestamp(uint256 _tgeTimestamp) external onlyOwner {
+        tgeTimestamp = _tgeTimestamp;
+    }
+
     // Allocate match tokens to users and then can be claimed
     // Only after the public round is also finished
     function allocateMatchTokens() external onlyOwner {
@@ -128,13 +158,15 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
 
     // Claim match tokens
     function claim() external nonReentrant {
+        require(block.timestamp > tgeTimestamp && tgeTimestamp > 0, "TGE is not reached yet");
         require(matchTokenAllocated > 0, "Match tokens not allocated yet");
-        require(users[msg.sender].claimed == false, "Already claimed");
 
-        uint256 amountToClaim = userClaimableAmount(msg.sender);
-        require(amountToClaim > 0, "No match token to claim");
+        uint256 releasedAmount = userCurrentRelease(msg.sender);
+        require(releasedAmount > 0, "No match token to claim");
 
-        users[msg.sender].claimed = true;
+        // ! Added 2023-12-21
+        uint256 amountToClaim = releasedAmount - userClaimedAmount[msg.sender];
+        userClaimedAmount[msg.sender] += amountToClaim;
 
         IERC20(matchToken).safeTransfer(msg.sender, amountToClaim);
 

@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import MerkleTree from "merkletreejs";
 
-import { readAddressList, readWhitelist } from "../scripts/contractAddress";
+import { readAddressList, readRealWhitelist, readWhitelist } from "../scripts/contractAddress";
 import { toWei } from "../test/helpers";
 import { MatchWhitelistSale, MatchWhitelistSale__factory } from "../types";
 
@@ -60,10 +60,7 @@ task("setMatchTokenInPublicSale", "Set MatchToken in public sale", async (_taskA
 task("setMerkleRoot", "Set merkle root in whitelist sale").setAction(async (_taskArgs, hre) => {
   const { network, ethers } = hre;
   const addressList = readAddressList();
-  const whitelist = readWhitelist();
-
-  console.log("total amount on whitelist:", whitelist.length);
-  console.log("whitelist address", whitelist);
+  const whitelist = readRealWhitelist();
 
   const leaves = whitelist.map((account: any) => ethers.keccak256(account));
   const tree = new MerkleTree(leaves, ethers.keccak256, { sort: true });
@@ -81,7 +78,9 @@ task("setMerkleRoot", "Set merkle root in whitelist sale").setAction(async (_tas
 task("purchase", "Purchase whitelist").setAction(async (_, hre) => {
   const { network, ethers } = hre;
   const addressList = readAddressList();
-  const whitelist = readWhitelist();
+  const whitelist = readRealWhitelist();
+
+  const [dev] = await ethers.getSigners();
 
   console.log("total amount on whitelist:", whitelist.length);
   console.log("whitelist address", whitelist);
@@ -89,14 +88,16 @@ task("purchase", "Purchase whitelist").setAction(async (_, hre) => {
   const leaves = whitelist.map((account: any) => ethers.keccak256(account));
   const tree = new MerkleTree(leaves, ethers.keccak256, { sort: true });
   const root = tree.getHexRoot();
-  const proof = tree.getHexProof(ethers.keccak256(whitelist[1]));
+  const proof = tree.getHexProof(ethers.keccak256(dev.address));
 
   const matchWhitelistSale = await ethers.getContractAt(
     "MatchWhitelistSale",
     addressList[network.name].MatchWhitelistSale,
   );
 
-  const tx = await matchWhitelistSale.purchase(proof, { value: ethers.parseEther("0.001") });
+  console.log("proof", proof);
+
+  const tx = await matchWhitelistSale.purchase(proof, { value: ethers.parseEther("0.01") });
   console.log("tx hash", tx.hash);
 });
 task("get", "Purchase whitelist").setAction(async (_, hre) => {

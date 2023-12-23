@@ -1,7 +1,6 @@
 /**
  * Remember to use this function in the root path of your hardhat project
  */
-
 import * as fs from "fs";
 
 ///
@@ -13,10 +12,7 @@ export const readAddressList = function () {
 };
 
 export const storeAddressList = function (addressList: object) {
-  fs.writeFileSync(
-    "info/address.json",
-    JSON.stringify(addressList, null, "\t")
-  );
+  fs.writeFileSync("info/address.json", JSON.stringify(addressList, null, "\t"));
 };
 
 export const readImplList = function () {
@@ -25,10 +21,7 @@ export const readImplList = function () {
 };
 
 export const storeImplList = function (implList: object) {
-  fs.writeFileSync(
-    "info/implementation.json",
-    JSON.stringify(implList, null, "\t")
-  );
+  fs.writeFileSync("info/implementation.json", JSON.stringify(implList, null, "\t"));
 };
 
 export const clearAddressList = function () {
@@ -37,7 +30,9 @@ export const clearAddressList = function () {
 };
 
 export const readWhitelist = function () {
-    return JSON.parse(fs.readFileSync("info/whitelist.json", "utf-8"));
-  };
-  
+  return JSON.parse(fs.readFileSync("info/whitelist.json", "utf-8"));
+};
 
+export const readRealWhitelist = function () {
+  return JSON.parse(fs.readFileSync("info/realWhitelist.json", "utf-8"));
+};

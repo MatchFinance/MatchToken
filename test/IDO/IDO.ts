@@ -1,11 +1,13 @@
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
+import * as fs from "fs";
 import { ethers } from "hardhat";
 import { MerkleTree } from "merkletreejs";
 
 import { toWei } from "../helpers";
 import { deployMatchTokenFixture } from "../token.fixture";
+import { getLatestBlockTimestamp } from "../utils";
 import { deployIDOContracts } from "./IDO.fixture";
 
 describe("Unit tests for Match Token IDO", function () {
@@ -173,13 +175,98 @@ describe("Unit tests for Match Token IDO", function () {
         .to.emit(publicSale, "MatchTokenAllocated")
         .withArgs(toWei(1200000));
 
-      expect(await whitelistSale.connect(user1).claim())
-        .to.emit(whitelistSale, "MatchTokenClaimed")
-        .withArgs(user1.address, toWei(300000));
+      const currentTimestamp = await getLatestBlockTimestamp(ethers.provider);
+      await whitelistSale.setTGETimestamp(currentTimestamp);
+      await publicSale.setTGETimestamp(currentTimestamp);
 
-      expect(await publicSale.connect(user2).claim())
-        .to.emit(publicSale, "MatchTokenClaimed")
-        .withArgs(user2.address, toWei(1200000));
+      const user1Balance1 = await matchToken.balanceOf(user1.address);
+      await whitelistSale.connect(user1).claim();
+      const user1Balance2 = await matchToken.balanceOf(user1.address);
+      console.log("User1 claim at tge: ", ethers.formatEther(user1Balance2 - user1Balance1));
+
+      const user2Balance1 = await matchToken.balanceOf(user2.address);
+      await publicSale.connect(user2).claim();
+      const user2Balance2 = await matchToken.balanceOf(user2.address);
+      console.log("User2 claim at tge: ", ethers.formatEther(user2Balance2 - user2Balance1));
+
+      const endTime = (await whitelistSale.VESTING_TIME()) + (await whitelistSale.tgeTimestamp());
+      // const endTime = (await whitelistSale.tgeTimestamp()) + 1000000n;
+      await time.setNextBlockTimestamp(endTime);
+      console.log("end time", endTime);
+
+      // const user1ReleasedAmount = await whitelistSale.userCurrentRelease(user1.address);
+      // console.log("User1 released amount: ", ethers.formatEther(user1ReleasedAmount));
+      // console.log(
+      //   "User1 claimed amount: ",
+      //   ethers.formatEther((await whitelistSale.userClaimedAmount(user1.address)).toString()),
+      // );
+
+      await whitelistSale.connect(user1).claim();
+      const user1Balance3 = await matchToken.balanceOf(user1.address);
+
+      await publicSale.connect(user2).claim();
+      const user2Balance3 = await matchToken.balanceOf(user2.address);
+
+      console.log("User1 claim at vesting: ", ethers.formatEther(user1Balance3));
+      console.log("User2 claim at vesting: ", ethers.formatEther(user2Balance3));
+
+      const adminBalance = await ethers.provider.getBalance(admin.address);
+      await whitelistSale.connect(admin).claimFund();
+      const adminBalance2 = await ethers.provider.getBalance(admin.address);
+      console.log("admin claim fund: ", ethers.formatEther(adminBalance2 - adminBalance));
+
+      await publicSale.claimFund();
+      const adminBalance3 = await ethers.provider.getBalance(admin.address);
+      console.log("Admin claim fund:", ethers.formatEther(adminBalance3 - adminBalance2));
+    });
+
+    it("test gas fee for whitelist sale", async function () {
+      const twhitelist = JSON.parse(fs.readFileSync("info/testwhitelist.json", "utf-8"));
+      const whitelist = twhitelist.concat([user1.address, user2.address]);
+
+      console.log("total amount on whitelist:", whitelist.length);
+
+      const { whitelistSale } = await loadFixture(deployIDOContracts);
+
+      const leaves = whitelist.map((account: any) => ethers.keccak256(account));
+      const tree = new MerkleTree(leaves, ethers.keccak256, { sort: true });
+      const root = tree.getHexRoot();
+      await whitelistSale.setMerkleRoot(root);
+
+      const proof = tree.getHexProof(ethers.keccak256(user1.address));
+
+      await time.setNextBlockTimestamp((await whitelistSale.WL_START()) + 1n);
+
+      const tx = await whitelistSale.connect(user1).purchase(proof, { value: toWei(1) });
+      const receipt = await tx.wait();
+      console.log("gas used for whitelist sale:", receipt?.gasUsed.toString());
+
+      // #
+      // # should have correct record after purchase
+      // #
+      expect(await whitelistSale.totalEthersReceived()).to.equal(toWei(1));
+      expect((await whitelistSale.users(user1.address)).amount).to.equal(toWei(1));
+
+      // #
+      // # should not allow users to purchase more than whitelist cap
+      // #
+      await expect(whitelistSale.connect(user2).purchase(proof, { value: toWei(75) })).to.be.revertedWith(
+        "ETH cap exceeded",
+      );
+
+      await expect(whitelistSale.connect(user1).purchase(proof, { value: toWei(74) }))
+        .to.emit(whitelistSale, "WhitelistRoundPurchased")
+        .withArgs(user1.address, toWei(74));
+
+      // #
+      // # Should not allow users to purchase when ended
+      // #
+      await time.setNextBlockTimestamp((await whitelistSale.WL_END()) + 1n);
+      await expect(whitelistSale.connect(user1).purchase(proof, { value: toWei(1) })).to.be.revertedWith(
+        "IDO is not started or finished",
+      );
+
+      expect(await whitelistSale.totalWhitelistAllocation()).to.equal(toWei(1500000));
     });
   });
 });
