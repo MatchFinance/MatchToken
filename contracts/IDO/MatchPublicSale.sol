@@ -1,3 +1,12 @@
+/*
+ *  ███╗   ███╗ █████╗ ████████╗ ██████╗██╗  ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗  *
+ *  ████╗ ████║██╔══██╗╚══██╔══╝██╔════╝██║  ██║    ██╔════╝██║████╗  ██║██╔══██╗████╗  ██║██╔════╝██╔════╝  *
+ *  ██╔████╔██║███████║   ██║   ██║     ███████║    █████╗  ██║██╔██╗ ██║███████║██╔██╗ ██║██║     █████╗    *
+ *  ██║╚██╔╝██║██╔══██║   ██║   ██║     ██╔══██║    ██╔══╝  ██║██║╚██╗██║██╔══██║██║╚██╗██║██║     ██╔══╝    *
+ *  ██║ ╚═╝ ██║██║  ██║   ██║   ╚██████╗██║  ██║    ██║     ██║██║ ╚████║██║  ██║██║ ╚████║╚██████╗███████╗  *
+ *  ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝    ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝  *
+ */
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity =0.8.21;
@@ -11,6 +20,10 @@ import { IDOConstants, IDOTestConstants } from "./IDOConstants.sol";
 
 contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOConstants {
     using SafeERC20 for IERC20;
+
+    // ---------------------------------------------------------------------------------------- //
+    // ************************************** Variables *************************************** //
+    // ---------------------------------------------------------------------------------------- //
 
     uint256 public ethTargetAmount;
 
@@ -44,15 +57,27 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
 
     // ! End of added 2023-12-21
 
+    // ---------------------------------------------------------------------------------------- //
+    // *************************************** Events ***************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
     event PublicSaleInitialized(uint256 ethTarget);
     event PublicRoundPurchased(address indexed user, uint256 amount);
     event MatchTokenAllocated(uint256 amount);
     event MatchTokenClaimed(address indexed user, uint256 amount);
 
+    // ---------------------------------------------------------------------------------------- //
+    // ************************************* Initializer ************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
     function initialize() public initializer {
         __Ownable_init(msg.sender);
         __ReentrancyGuard_init();
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** View Functions ************************************* //
+    // ---------------------------------------------------------------------------------------- //
 
     // After public sale is end, this return value is the final amount of match tokens to public sale
     function totalPublicAllocation() public view returns (uint256) {
@@ -102,6 +127,10 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
         return (totalEthers * SCALE) / MATCH_CAP_TOTAL;
     }
 
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** Set Functions ************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
     function setMatchToken(address _matchToken) external onlyOwner {
         matchToken = _matchToken;
     }
@@ -113,6 +142,10 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
     function setTGETimestamp(uint256 _tgeTimestamp) external onlyOwner {
         tgeTimestamp = _tgeTimestamp;
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** Main Functions ************************************* //
+    // ---------------------------------------------------------------------------------------- //
 
     function initializePublicSale() external {
         require(ethTargetAmount == 0, "Already initialized");
@@ -184,6 +217,10 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
         (bool success, ) = msg.sender.call{ value: address(this).balance }("");
         require(success, "Claim failed");
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // ********************************* Internal Functions *********************************** //
+    // ---------------------------------------------------------------------------------------- //
 
     function _withinPeriod() internal view returns (bool) {
         return block.timestamp >= PUB_START && block.timestamp <= PUB_END;

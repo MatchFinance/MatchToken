@@ -1,3 +1,12 @@
+/*
+ *  ███╗   ███╗ █████╗ ████████╗ ██████╗██╗  ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗  *
+ *  ████╗ ████║██╔══██╗╚══██╔══╝██╔════╝██║  ██║    ██╔════╝██║████╗  ██║██╔══██╗████╗  ██║██╔════╝██╔════╝  *
+ *  ██╔████╔██║███████║   ██║   ██║     ███████║    █████╗  ██║██╔██╗ ██║███████║██╔██╗ ██║██║     █████╗    *
+ *  ██║╚██╔╝██║██╔══██║   ██║   ██║     ██╔══██║    ██╔══╝  ██║██║╚██╗██║██╔══██║██║╚██╗██║██║     ██╔══╝    *
+ *  ██║ ╚═╝ ██║██║  ██║   ██║   ╚██████╗██║  ██║    ██║     ██║██║ ╚████║██║  ██║██║ ╚████║╚██████╗███████╗  *
+ *  ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝    ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝  *
+ */
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity =0.8.21;
@@ -12,6 +21,10 @@ import { IDOConstants, IDOTestConstants } from "./IDOConstants.sol";
 
 contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOConstants {
     using SafeERC20 for IERC20;
+
+    // ---------------------------------------------------------------------------------------- //
+    // ************************************* Variables **************************************** //
+    // ---------------------------------------------------------------------------------------- //
 
     uint256 public totalEthersReceived;
 
@@ -46,14 +59,26 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
 
     // ! End of added 2023-12-21
 
+    // ---------------------------------------------------------------------------------------- //
+    // *************************************** Events ***************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
     event WhitelistRoundPurchased(address indexed user, uint256 amount);
     event MatchTokenAllocated(uint256 amount);
     event MatchTokenClaimed(address indexed user, uint256 amount);
+
+    // ---------------------------------------------------------------------------------------- //
+    // ************************************ Initializer *************************************** //
+    // ---------------------------------------------------------------------------------------- //
 
     function initialize() public initializer {
         __Ownable_init(msg.sender);
         __ReentrancyGuard_init();
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** View Functions ************************************* //
+    // ---------------------------------------------------------------------------------------- //
 
     function isSoldOut() public view returns (bool) {
         return totalEthersReceived == ETH_CAP_WL;
@@ -112,6 +137,10 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         return (totalEthers * SCALE) / MATCH_CAP_TOTAL;
     }
 
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** Set Functions ************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
     function setMatchToken(address _matchToken) external onlyOwner {
         matchToken = _matchToken;
     }
@@ -123,6 +152,14 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
         merkleRoot = _merkleRoot;
     }
+
+    function setTGETimestamp(uint256 _tgeTimestamp) external onlyOwner {
+        tgeTimestamp = _tgeTimestamp;
+    }
+
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** Main Functions ************************************* //
+    // ---------------------------------------------------------------------------------------- //
 
     function purchase(bytes32[] memory _proof) external payable nonReentrant {
         require(_withinPeriod(), "IDO is not started or finished");
@@ -137,10 +174,6 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         totalEthersReceived += msg.value;
 
         emit WhitelistRoundPurchased(msg.sender, msg.value);
-    }
-
-    function setTGETimestamp(uint256 _tgeTimestamp) external onlyOwner {
-        tgeTimestamp = _tgeTimestamp;
     }
 
     // Allocate match tokens to users and then can be claimed
@@ -183,6 +216,10 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         (bool success, ) = msg.sender.call{ value: address(this).balance }("");
         require(success, "Claim failed");
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // ********************************* Internal Functions *********************************** //
+    // ---------------------------------------------------------------------------------------- //
 
     function _withinPeriod() internal view returns (bool) {
         return block.timestamp >= WL_START && block.timestamp <= WL_END;
