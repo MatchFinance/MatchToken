@@ -1,3 +1,12 @@
+/*
+ *  ███╗   ███╗ █████╗ ████████╗ ██████╗██╗  ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗  *
+ *  ████╗ ████║██╔══██╗╚══██╔══╝██╔════╝██║  ██║    ██╔════╝██║████╗  ██║██╔══██╗████╗  ██║██╔════╝██╔════╝  *
+ *  ██╔████╔██║███████║   ██║   ██║     ███████║    █████╗  ██║██╔██╗ ██║███████║██╔██╗ ██║██║     █████╗    *
+ *  ██║╚██╔╝██║██╔══██║   ██║   ██║     ██╔══██║    ██╔══╝  ██║██║╚██╗██║██╔══██║██║╚██╗██║██║     ██╔══╝    *
+ *  ██║ ╚═╝ ██║██║  ██║   ██║   ╚██████╗██║  ██║    ██║     ██║██║ ╚████║██║  ██║██║ ╚████║╚██████╗███████╗  *
+ *  ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝    ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝  *
+ */
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity =0.8.21;
@@ -21,6 +30,9 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     // ---------------------------------------------------------------------------------------- //
 
     address public matchToken;
+
+    uint256 public totalDistributed;
+    uint256 public totalPendingDistribute;
 
     struct VestingInfo {
         uint256 start;
@@ -67,7 +79,7 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     // ! If a receiver's vesting is "all released at tge"
     // ! Should set it with parameters:
-    // !  -> start = cliff 
+    // !  -> start = cliff
     // !  -> duration = 0 & inteval = 0
     // !  -> amount = tgeAmount
     function setNewVesting(
@@ -100,6 +112,8 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             newVesting.vestedPerTime = (_amount - _tgeAmount) / totalTimes;
         }
 
+        totalPendingDistribute += _amount;
+
         emit NewVestingSet(_receiver, _start, _cliff, _duration, _interval, _amount, _tgeAmount);
     }
 
@@ -123,7 +137,12 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     // Stop a user's vesting
     // When updating vesting info, stop it and set a new one
     function stopVesting(address _receiver) external onlyOwner {
-        require(vestings[_receiver].amount > 0, "Not an active investor");
+        uint256 userVestingAmount = vestings[_receiver].amount;
+        uint256 userAlreadyVested = vestings[_receiver].vestedAmount;
+
+        require(userVestingAmount > 0, "Not an active receiver");
+
+        totalPendingDistribute -= (userVestingAmount - userAlreadyVested);
 
         delete vestings[_receiver];
         emit VestingStopped(_receiver);
@@ -143,6 +162,10 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(amountTransferred > 0, "Not enough balance in contract");
 
         vestings[msg.sender].vestedAmount += amountTransferred;
+
+        // Update total distribution record
+        totalPendingDistribute -= amountTransferred;
+        totalDistributed += amountTransferred;
 
         emit Withdraw(msg.sender, amountTransferred);
     }
@@ -170,6 +193,10 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             return userVesting.tgeAmount + (userVesting.vestedPerTime * distributeTimes);
         }
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // ********************************** Internal Functions ********************************** //
+    // ---------------------------------------------------------------------------------------- //
 
     function _safeMatchTransfer(address _to, uint256 _amount) internal returns (uint256) {
         uint256 balance = IERC20(matchToken).balanceOf(address(this));
