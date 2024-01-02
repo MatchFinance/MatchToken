@@ -29,6 +29,7 @@ contract VLMatch is OwnableUpgradeable, ERC20Upgradeable {
     // ---------------------------------------------------------------------------------------- //
 
     mapping(address user => bool isMinter) public isMinter;
+    mapping(address user => bool isBurner) public isBurner;
     mapping(address user => bool isLocker) public isLocker;
 
     mapping(address user => uint256 lockedAmount) public userLocked;
@@ -37,11 +38,14 @@ contract VLMatch is OwnableUpgradeable, ERC20Upgradeable {
     // *************************************** Events ***************************************** //
     // ---------------------------------------------------------------------------------------- //
 
-    event MinterAdded(address user);
-    event MinterRemoved(address user);
+    event MinterAdded(address minter);
+    event MinterRemoved(address minter);
+    event BurnerAdded(address burner);
+    event BurnerRemoved(address burner);
     event LockerAdded(address user);
     event LockerRemoved(address user);
     event Mint(address user, uint256 amount);
+    event Burn(address user, uint256 amount);
     event Lock(address user, uint256 amount);
     event Unlock(address user, uint256 amount);
 
@@ -72,6 +76,16 @@ contract VLMatch is OwnableUpgradeable, ERC20Upgradeable {
         emit MinterRemoved(_user);
     }
 
+    function addBurner(address _user) external onlyOwner {
+        isBurner[_user] = true;
+        emit BurnerAdded(_user);
+    }
+
+    function removeBurner(address _user) external onlyOwner {
+        isBurner[_user] = false;
+        emit BurnerRemoved(_user);
+    }
+
     function addLocker(address _user) external onlyOwner {
         isLocker[_user] = true;
         emit LockerAdded(_user);
@@ -91,6 +105,13 @@ contract VLMatch is OwnableUpgradeable, ERC20Upgradeable {
         _mint(_to, _amount);
 
         emit Mint(_to, _amount);
+    }
+
+    function burn(address _to, uint256 _amount) external {
+        require(isBurner[msg.sender], "Not a burner");
+        _burn(_to, _amount);
+
+        emit Burn(_to, _amount);
     }
 
     function lock(address _user, uint256 _amount) external {

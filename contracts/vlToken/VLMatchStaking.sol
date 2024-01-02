@@ -1,3 +1,12 @@
+/*
+ *  ███╗   ███╗ █████╗ ████████╗ ██████╗██╗  ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗  *
+ *  ████╗ ████║██╔══██╗╚══██╔══╝██╔════╝██║  ██║    ██╔════╝██║████╗  ██║██╔══██╗████╗  ██║██╔════╝██╔════╝  *
+ *  ██╔████╔██║███████║   ██║   ██║     ███████║    █████╗  ██║██╔██╗ ██║███████║██╔██╗ ██║██║     █████╗    *
+ *  ██║╚██╔╝██║██╔══██║   ██║   ██║     ██╔══██║    ██╔══╝  ██║██║╚██╗██║██╔══██║██║╚██╗██║██║     ██╔══╝    *
+ *  ██║ ╚═╝ ██║██║  ██║   ██║   ╚██████╗██║  ██║    ██║     ██║██║ ╚████║██║  ██║██║ ╚████║╚██████╗███████╗  *
+ *  ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝    ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝  *
+ */
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity =0.8.21;
@@ -10,14 +19,24 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 contract VLMatchStaking is OwnableUpgradeable {
     using SafeERC20 for IVLMatch;
 
+    // ---------------------------------------------------------------------------------------- //
+    // ************************************* Constants **************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
     uint256 public constant SCALE = 1e18;
 
+    // ---------------------------------------------------------------------------------------- //
+    // ************************************** Variables *************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
+    // Token to stake, and reward token to claim
     address public vlMatch;
     address public mesLBR;
+
+    // Reward manager contract to manage the distribution logic
     address public rewardManager;
 
     uint256 public totalStaked;
-
     uint256 public totalReward;
     uint256 public accRewardPerToken;
 
@@ -25,7 +44,11 @@ contract VLMatchStaking is OwnableUpgradeable {
         uint256 amount;
         uint256 rewardDebt;
     }
-    mapping(address => UserInfo) public users;
+    mapping(address user => UserInfo userInfo) public users;
+
+    // ---------------------------------------------------------------------------------------- //
+    // *************************************** Events ***************************************** //
+    // ---------------------------------------------------------------------------------------- //
 
     event Stake(address indexed user, uint256 amount, uint256 reward);
     event Unstake(address indexed user, uint256 amount, uint256 reward);
@@ -33,9 +56,17 @@ contract VLMatchStaking is OwnableUpgradeable {
     event RewardUpdated(uint256 newReward);
     event EmergencyWithdraw(address token, uint256 amount);
 
+    // ---------------------------------------------------------------------------------------- //
+    // ************************************ Initializer *************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
     function initialize() public initializer {
         __Ownable_init(msg.sender);
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** View Functions ************************************* //
+    // ---------------------------------------------------------------------------------------- //
 
     function pendingReward(address _user) external view returns (uint256) {
         uint256 newPendingReward = IRewardManager(rewardManager).pendingRewardInDistributor(vlMatch);
@@ -46,6 +77,10 @@ contract VLMatchStaking is OwnableUpgradeable {
 
         return (user.amount * newAccRewardPerToken) / SCALE - user.rewardDebt;
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** Main Functions ************************************* //
+    // ---------------------------------------------------------------------------------------- //
 
     function stake(uint256 _amount) external {
         require(_amount > 0, "Zero amount");

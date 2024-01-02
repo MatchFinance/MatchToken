@@ -5,11 +5,13 @@ pragma solidity =0.8.21;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IVLMatch is IERC20 {
-    function mint(address _to, uint256 _amount) external;
+    function mint(address to, uint256 amount) external;
 
-    function burn(address _from, uint256 _amount) external;
+    function burn(address from, uint256 amount) external;
 
-    function lock(address _user, uint256 _amount) external;
+    function lock(address user, uint256 amount) external;
 
-    function unlock(address _user, uint256 _amount) external;
+    function unlock(address user, uint256 amount) external;
+
+    function nonLockedBalance(address user) external view returns(uint256);
 }

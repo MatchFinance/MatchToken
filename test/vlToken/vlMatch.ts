@@ -81,8 +81,18 @@ describe("Unit tests for vlMatch and vesting", function () {
       // # Staked vlMatch has been locked
       expect(await vlMatch.balanceOf(user1.address)).to.equal(toWei(100));
       expect(await vlMatch.staked(user1.address)).to.equal(toWei(100));
+    });
 
-      
+    it("should be able to vest vlMatch", async function () {
+      const { vlMatch, vlMatchVesting } = await loadFixture(deployVLMatchContracts);
+
+      await vlMatch.setRole(vlMatchVesting.target);
+      await vlMatch.mint(user1.address, toWei(100));
+      await vlMatch.connect(user1).approve(vlMatchVesting.target, toWei(100));
+
+      await vlMatchVesting.connect(user1).stakeVLMatch(toWei(100));
+
+      const vestedAmount1 = await vlMatchVesting.startVesting
     });
   });
 });
