@@ -1,3 +1,12 @@
+/*
+ *  ███╗   ███╗ █████╗ ████████╗ ██████╗██╗  ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗  *
+ *  ████╗ ████║██╔══██╗╚══██╔══╝██╔════╝██║  ██║    ██╔════╝██║████╗  ██║██╔══██╗████╗  ██║██╔════╝██╔════╝  *
+ *  ██╔████╔██║███████║   ██║   ██║     ███████║    █████╗  ██║██╔██╗ ██║███████║██╔██╗ ██║██║     █████╗    *
+ *  ██║╚██╔╝██║██╔══██║   ██║   ██║     ██╔══██║    ██╔══╝  ██║██║╚██╗██║██╔══██║██║╚██╗██║██║     ██╔══╝    *
+ *  ██║ ╚═╝ ██║██║  ██║   ██║   ╚██████╗██║  ██║    ██║     ██║██║ ╚████║██║  ██║██║ ╚████║╚██████╗███████╗  *
+ *  ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝    ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝  *
+ */
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity =0.8.21;
@@ -15,48 +24,94 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 contract VLMatch is OwnableUpgradeable, ERC20Upgradeable {
     using SafeERC20 for IERC20;
 
-    // 0: No mint/burn power
-    // 1: Mint & burn power
-    mapping(address => uint256) public roles;
+    // ---------------------------------------------------------------------------------------- //
+    // ************************************* Variables **************************************** //
+    // ---------------------------------------------------------------------------------------- //
 
-    mapping(address => uint256) public staked;
+    mapping(address user => bool isMinter) public isMinter;
+    mapping(address user => bool isLocker) public isLocker;
+
+    mapping(address user => uint256 lockedAmount) public userLocked;
+
+    // ---------------------------------------------------------------------------------------- //
+    // *************************************** Events ***************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
+    event MinterAdded(address user);
+    event MinterRemoved(address user);
+    event LockerAdded(address user);
+    event LockerRemoved(address user);
+    event Mint(address user, uint256 amount);
+    event Lock(address user, uint256 amount);
+    event Unlock(address user, uint256 amount);
 
     function initialize() public initializer {
         __Ownable_init(msg.sender);
         __ERC20_init("Value Locked Match Token", "vlMatch");
-
-        // Give the owner the mint/burn power
-        roles[msg.sender] = 1;
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** View Functions ************************************* //
+    // ---------------------------------------------------------------------------------------- //
 
     function nonLockedBalance(address _user) external view returns (uint256) {
-        return balanceOf(_user) - staked[_user];
+        return balanceOf(_user) - userLocked[_user];
     }
 
-    function setRole(address _user) external onlyOwner {
-        roles[_user] = 1;
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** Set Functions ************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
+    function addMinter(address _user) external onlyOwner {
+        isMinter[_user] = true;
+        emit MinterAdded(_user);
     }
+
+    function removeMinter(address _user) external onlyOwner {
+        isMinter[_user] = false;
+        emit MinterRemoved(_user);
+    }
+
+    function addLocker(address _user) external onlyOwner {
+        isLocker[_user] = true;
+        emit LockerAdded(_user);
+    }
+
+    function removeLocker(address _user) external onlyOwner {
+        isLocker[_user] = false;
+        emit LockerRemoved(_user);
+    }
+
+    // ---------------------------------------------------------------------------------------- //
+    // *********************************** Main Functions ************************************* //
+    // ---------------------------------------------------------------------------------------- //
 
     function mint(address _to, uint256 _amount) external {
-        require(roles[msg.sender] == 1, "Not a minter");
+        require(isMinter[msg.sender], "Not a minter");
         _mint(_to, _amount);
-    }
 
-    function burn(address _to, uint256 _amount) external {
-        require(roles[msg.sender] == 1, "Not a burner");
-        _burn(_to, _amount);
+        emit Mint(_to, _amount);
     }
 
     function lock(address _user, uint256 _amount) external {
-        require(roles[msg.sender] == 1, "Not a locker");
-        require(staked[_user] + _amount <= balanceOf(_user), "Not enough balance to lock");
-        staked[_user] += _amount;
+        require(isLocker[msg.sender], "Not a locker");
+        require(userLocked[_user] + _amount <= balanceOf(_user), "Not enough balance to lock");
+        userLocked[_user] += _amount;
+
+        emit Lock(_user, _amount);
     }
 
     function unlock(address _user, uint256 _amount) external {
-        require(roles[msg.sender] == 1, "Not an unlocker");
-        staked[_user] -= _amount;
+        require(isLocker[msg.sender], "Not a locker");
+        require(_amount <= userLocked[_user], "Not enough locked");
+        userLocked[_user] -= _amount;
+
+        emit Unlock(_user, _amount);
     }
+
+    // ---------------------------------------------------------------------------------------- //
+    // ********************************* Intetnal Functions *********************************** //
+    // ---------------------------------------------------------------------------------------- //
 
     // Transfer is not allowed for vlMatch
     function _update(address from, address to, uint256 value) internal virtual override {
