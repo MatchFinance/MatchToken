@@ -36,13 +36,17 @@ contract VLMatchStaking is OwnableUpgradeable {
     // Reward manager contract to manage the distribution logic
     address public rewardManager;
 
+    address public vlMatchVesting;
+
     uint256 public totalStaked;
     uint256 public totalReward;
     uint256 public accRewardPerToken;
+    uint256 public accPenaltyRewardPerToken;
 
     struct UserInfo {
         uint256 amount;
         uint256 rewardDebt;
+        uint256 penaltyRewardDebt;
     }
     mapping(address user => UserInfo userInfo) public users;
 
@@ -50,18 +54,25 @@ contract VLMatchStaking is OwnableUpgradeable {
     // *************************************** Events ***************************************** //
     // ---------------------------------------------------------------------------------------- //
 
-    event Stake(address indexed user, uint256 amount, uint256 reward);
-    event Unstake(address indexed user, uint256 amount, uint256 reward);
-    event Harvest(address indexed user, uint256 reward);
+    event VLMatchVestingSet(address vlMatchVesting);
+    event Stake(address indexed user, uint256 amount, uint256 mesLBRReward, uint256 penaltyReward);
+    event Unstake(address indexed user, uint256 amount, uint256 mesLBRReward, uint256 penaltyReward);
+    event Harvest(address indexed user, uint256 mesLBRReward, uint256 penaltyReward);
     event RewardUpdated(uint256 newReward);
+    event PenaltyRewardUpdated(uint256 newReward);
     event EmergencyWithdraw(address token, uint256 amount);
 
     // ---------------------------------------------------------------------------------------- //
     // ************************************ Initializer *************************************** //
     // ---------------------------------------------------------------------------------------- //
 
-    function initialize() public initializer {
+    function initialize(address _vlMatch, address _mesLBR, address _rewardManager) public initializer {
         __Ownable_init(msg.sender);
+
+        vlMatch = _vlMatch;
+        mesLBR = _mesLBR;
+
+        rewardManager = _rewardManager;
     }
 
     // ---------------------------------------------------------------------------------------- //
@@ -79,6 +90,15 @@ contract VLMatchStaking is OwnableUpgradeable {
     }
 
     // ---------------------------------------------------------------------------------------- //
+    // *********************************** Set Functions ************************************** //
+    // ---------------------------------------------------------------------------------------- //
+
+    function setVLMatchVesting(address _vlMatchVesting) external onlyOwner {
+        vlMatchVesting = _vlMatchVesting;
+        emit VLMatchVestingSet(_vlMatchVesting);
+    }
+
+    // ---------------------------------------------------------------------------------------- //
     // *********************************** Main Functions ************************************* //
     // ---------------------------------------------------------------------------------------- //
 
@@ -90,20 +110,16 @@ contract VLMatchStaking is OwnableUpgradeable {
         UserInfo storage user = users[msg.sender];
 
         // If has reward, first claim it
-        uint256 pending;
-        if (user.amount > 0) {
-            pending = (user.amount * accRewardPerToken) / SCALE - user.rewardDebt;
-            IVLMatch(mesLBR).safeTransfer(msg.sender, pending);
-        }
+        (uint256 pendingMesLBRReward, uint256 pendingPenaltyReward) = _harvestReward(msg.sender);
 
         IVLMatch(vlMatch).lock(msg.sender, _amount);
 
         user.amount += _amount;
         totalStaked += _amount;
 
-        user.rewardDebt = (user.amount * accRewardPerToken) / SCALE;
+        _updateUserDebt(msg.sender);
 
-        emit Stake(msg.sender, _amount, pending);
+        emit Stake(msg.sender, _amount, pendingMesLBRReward, pendingPenaltyReward);
     }
 
     function unstake(uint256 _amount) external {
@@ -111,31 +127,28 @@ contract VLMatchStaking is OwnableUpgradeable {
         require(_amount < user.amount, "Insufficient amount to unstake");
 
         updateReward();
-
-        uint256 pending = (user.amount * accRewardPerToken) / SCALE - user.rewardDebt;
-        IVLMatch(mesLBR).safeTransfer(msg.sender, pending);
+        
+        // If has reward, first claim it
+        (uint256 pendingMesLBRReward, uint256 pendingPenaltyReward) = _harvestReward(msg.sender);
 
         user.amount -= _amount;
         totalStaked -= _amount;
 
         IVLMatch(vlMatch).unlock(msg.sender, _amount);
 
-        user.rewardDebt = (user.amount * accRewardPerToken) / SCALE;
+        _updateUserDebt(msg.sender);
 
-        emit Unstake(msg.sender, _amount, pending);
+        emit Unstake(msg.sender, _amount, pendingMesLBRReward, pendingPenaltyReward);
     }
 
     function harvest() external {
         updateReward();
 
-        UserInfo storage user = users[msg.sender];
+        (uint256 pendingMesLBRReward, uint256 pendingPenaltyReward) = _harvestReward(msg.sender);
 
-        uint256 pending = (user.amount * accRewardPerToken) / SCALE - user.rewardDebt;
-        IVLMatch(mesLBR).safeTransfer(msg.sender, pending);
+        _updateUserDebt(msg.sender);
 
-        user.rewardDebt = (user.amount * accRewardPerToken) / SCALE;
-
-        emit Harvest(msg.sender, pending);
+        emit Harvest(msg.sender, pendingMesLBRReward, pendingPenaltyReward);
     }
 
     function updateReward() public {
@@ -150,8 +163,55 @@ contract VLMatchStaking is OwnableUpgradeable {
         emit RewardUpdated(mesLBRReward);
     }
 
+    function updatePenaltyReward(uint256 _newReward) external {
+        require(msg.sender == vlMatchVesting, "Only vesting can call");
+
+        accPenaltyRewardPerToken += (_newReward * SCALE) / totalStaked;
+
+        emit PenaltyRewardUpdated(_newReward);
+    }
+
     function emergencyWithdraw(address _token, uint256 _amount) external onlyOwner {
         IVLMatch(_token).safeTransfer(msg.sender, _amount);
         emit EmergencyWithdraw(_token, _amount);
+    }
+
+    // ---------------------------------------------------------------------------------------- //
+    // ********************************* Internal Functions *********************************** //
+    // ---------------------------------------------------------------------------------------- //
+
+    function _harvestReward(address _user) internal returns (uint256 actualMesLBRReward, uint256 pendingPenaltyReward) {
+        UserInfo storage user = users[_user];
+        uint256 userAmount = user.amount;
+
+        // If user has no staked amount before, return (0,0)
+        if (userAmount > 0) {
+            uint256 pendingMesLBRReward = (userAmount * accRewardPerToken) / SCALE - user.rewardDebt;
+            actualMesLBRReward = _safeMesLBRTransfer(msg.sender, pendingMesLBRReward);
+
+            // Mint more vlMatch reward to the user
+            pendingPenaltyReward = (userAmount * accPenaltyRewardPerToken) / SCALE - user.penaltyRewardDebt;
+            IVLMatch(vlMatch).mint(msg.sender, pendingPenaltyReward);
+        }
+    }
+
+    function _updateUserDebt(address _user) internal {
+        UserInfo storage user = users[_user];
+        uint256 userAmount = user.amount;
+
+        user.rewardDebt = (userAmount * accRewardPerToken) / SCALE;
+        user.penaltyRewardDebt = (userAmount * accPenaltyRewardPerToken) / SCALE;
+    }
+
+    function _safeMesLBRTransfer(address _to, uint256 _amount) internal returns (uint256 actualAmount) {
+        uint256 balance = IVLMatch(mesLBR).balanceOf(address(this));
+
+        if (_amount > balance) {
+            IVLMatch(mesLBR).safeTransfer(_to, balance);
+            actualAmount = balance;
+        } else {
+            IVLMatch(mesLBR).safeTransfer(_to, _amount);
+            actualAmount = _amount;
+        }
     }
 }

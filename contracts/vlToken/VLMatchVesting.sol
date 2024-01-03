@@ -15,6 +15,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IVLMatch } from "../interfaces/IVLMatch.sol";
+import { IVLMatchStaking } from "../interfaces/IVLMatchStaking.sol";
 
 contract VLMatchVesting is OwnableUpgradeable {
     using SafeERC20 for IERC20;
@@ -35,6 +36,9 @@ contract VLMatchVesting is OwnableUpgradeable {
     address public matchToken;
     address public vlMatch;
 
+    // VLMatch staking contract to receive penalty reward
+    address public vlMatchStaking;
+
     struct UserInfo {
         uint256 stakedMatchAmount;
         uint256 vestedVLMatchAmount;
@@ -48,9 +52,6 @@ contract VLMatchVesting is OwnableUpgradeable {
 
     // Total vlMatch that starts vesting
     uint256 public totalVestedVLMatch;
-
-    // This reward is from others' "penalty"
-    uint256 public accRewardPerVLMatch;
 
     // Each time when a user starts a vesting, it will be stored as a seperate one
     // Vesting Id is the only key to find this vesting information
@@ -69,7 +70,6 @@ contract VLMatchVesting is OwnableUpgradeable {
     // *************************************** Events ***************************************** //
     // ---------------------------------------------------------------------------------------- //
 
-    event RewardClaimed(address indexed user, uint256 amount);
     event MatchTokenStaked(address indexed user, uint256 amount);
     event VLMatchStaked(address indexed user, uint256 amount);
     event VestingStarted(address indexed user, uint256 amount);
@@ -91,23 +91,16 @@ contract VLMatchVesting is OwnableUpgradeable {
     // ---------------------------------------------------------------------------------------- //
 
     /**
-     * @notice Calculate a user's pending reward (from penalty)
-     */
-    function pendingReward(address _user) public view returns (uint256) {
-        uint256 vestedAmount = users[_user].vestedVLMatchAmount;
-        return accRewardPerVLMatch * vestedAmount - users[msg.sender].rewardDebt;
-    }
-
-    /**
      * @notice Calculate penalty portion (with SCALE)
-     *         Day 0: start with 99% penalty
-     *         Day 180: full vesting, no penalty
+     *         Day 0: start with 100% penalty (10^18)
+     *         Day 90: half penalty (5 * 10^17)
+     *         Day 180: full vesting, no penalty (0)
      *
      * @param _startTime  Vesting start time
      * @param _targetTime Target time to calculate
      */
     function getPenaltyPortion(uint256 _startTime, uint256 _targetTime) public pure returns (uint256) {
-        // day 0: penalty 99
+        // day 0: penalty 100
         // day 180: penalty 0
 
         uint256 timePassed = _targetTime - _startTime;
@@ -117,7 +110,36 @@ contract VLMatchVesting is OwnableUpgradeable {
             return 0;
         }
 
-        return 99 * (SCALE - (timePassed * SCALE) / FULL_VESTING_TIME);
+        return SCALE - (timePassed * SCALE) / FULL_VESTING_TIME;
+    }
+
+    function getPenaltyAmount(
+        address _user,
+        uint256 _index
+    ) public view returns (uint256 availableAmount, uint256 penaltyAmount) {
+        bytes32 vestingId = _getVestingId(_user, _index);
+
+        uint256 totalAmount = vestings[vestingId].amount;
+        uint256 vestingStartTime = vestings[vestingId].startTime;
+
+        uint256 penaltyPortion = getPenaltyPortion(vestingStartTime, block.timestamp);
+
+        // Amount to claim and to be distributed to other vestors
+        availableAmount = ((SCALE - penaltyPortion) * totalAmount) / SCALE;
+        penaltyAmount = totalAmount - availableAmount;
+    }
+
+    function getUserVestings(address _user) external view returns(VestingInfo[] memory userVestings) {
+        uint256 totalVestings = userVestingCount[_user];
+
+        for (uint256 i; i < totalVestings;) {
+            bytes32 vestingId = _getVestingId(_user, i);
+            userVestings[i] = vestings[vestingId];
+            
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------------------- //
@@ -130,6 +152,10 @@ contract VLMatchVesting is OwnableUpgradeable {
 
     function setVLMatch(address _vlMatch) external onlyOwner {
         vlMatch = _vlMatch;
+    }
+
+    function setVLMatchStaking(address _vlMatchStaking) external onlyOwner {
+        vlMatchStaking = _vlMatchStaking;
     }
 
     // ---------------------------------------------------------------------------------------- //
@@ -190,34 +216,19 @@ contract VLMatchVesting is OwnableUpgradeable {
         uint256 availableAmount = ((SCALE - penaltyPortion) * vesting.amount) / SCALE;
         uint256 penaltyAmount = vesting.amount - availableAmount;
 
+        IVLMatchStaking(vlMatchStaking).updatePenaltyReward(penaltyAmount);
+
         // Transfer available amount to user
         IERC20(matchToken).safeTransfer(msg.sender, availableAmount);
 
         // Reward penalty to stakers
         // ! First update total vested amount
         totalVestedVLMatch -= vesting.amount;
-        accRewardPerVLMatch += penaltyAmount / totalVestedVLMatch;
 
         // Clear record of this vesting
         vestings[vestingId].amount = 0;
 
         emit ClaimFromVesting(msg.sender, _index, availableAmount, penaltyAmount);
-    }
-
-    /**
-     * @notice Claim reward
-     *         Reward comes from others' vesting penalty
-     */
-    function claimReward() public {
-        UserInfo storage user = users[msg.sender];
-
-        uint256 pending = pendingReward(msg.sender);
-
-        // Mint more vlMatch to the user as reward
-        IVLMatch(vlMatch).mint(msg.sender, pending);
-        emit RewardClaimed(msg.sender, pending);
-
-        user.rewardDebt = accRewardPerVLMatch * user.vestedVLMatchAmount;
     }
 
     function _getVestingId(address _user, uint256 _index) internal pure returns (bytes32) {
