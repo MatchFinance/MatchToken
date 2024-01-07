@@ -40,10 +40,7 @@ task("setMatchTokenInWhitelistSale", "Set MatchToken in whitelist sale", async (
     addressList[network.name].MatchWhitelistSale,
   );
 
-  console.log("1111");
-
   const tx1 = await matchWhitelistSale.setMatchToken(addressList[network.name].MatchToken);
-  console.log("222");
   console.log(tx1.hash);
 });
 
@@ -54,6 +51,23 @@ task("setMatchTokenInPublicSale", "Set MatchToken in public sale", async (_taskA
   const matchPublicSale = await ethers.getContractAt("MatchPublicSale", addressList[network.name].MatchPublicSale);
 
   const tx = await matchPublicSale.setMatchToken(addressList[network.name].MatchToken);
+  console.log(tx.hash);
+});
+
+task("mintMatch", "Mint match token").setAction(async (_taskArgs, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  const abi = ["function mint(address,uint256) external", "function addMinter(address) external"];
+
+  const matchToken = new ethers.Contract("0xafEAD1d7e31A13fA839e66fFff437D4cfC9335E0", abi, dev);
+
+  // const tx1 = await matchToken.addMinter(dev.address);
+  // console.log(tx1.hash);
+
+  const tx = await matchToken.mint("0x32eB34d060c12aD0491d260c436d30e5fB13a8Cd", ethers.parseEther("10000000"));
   console.log(tx.hash);
 });
 
@@ -121,4 +135,29 @@ task("initPublic").setAction(async (_, hre) => {
 
   const tx = await matchPublicSale.initializePublicSale();
   console.log(tx.hash);
+});
+
+task("allocate").setAction(async (_, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  // const matchToken = await ethers.getContractAt("MatchToken", addressList[network.name].MatchToken);
+  // const tx1 = await matchToken.approve(addressList[network.name].MatchWhitelistSale, ethers.parseEther("10000000"));
+
+  const matchPublicSale = await ethers.getContractAt("MatchPublicSale", addressList[network.name].MatchPublicSale);
+
+  const matchWhitelistSale = await ethers.getContractAt(
+    "MatchWhitelistSale",
+    addressList[network.name].MatchWhitelistSale,
+  );
+
+  const all = await matchPublicSale.userClaimableAmount(dev.address);
+  console.log("all", all.toString());
+
+  const rel = await matchPublicSale.userCurrentRelease(dev.address);
+  console.log("rel", rel.toString());
+  // const tx = await matchWhitelistSale.allocateMatchTokens();
+  // console.log(tx.hash);
 });

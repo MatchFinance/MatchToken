@@ -3,6 +3,10 @@
 		"MatchWhitelistSale": "0xb41A5A8b333997fdeb6Ea4388980f4D4e03612Bf",
 		"MatchPublicSale": "0x71602fbCF103833C03FFAfD9c5233D7e21222250"
 	},
-	"sepolia": {},
+	"sepolia": {
+		"MatchPublicSale": "0xCfDB8b46f3d226345716c437eB50f89083356b34",
+		"MatchWhitelistSale": "0xfFBf8C044824368141B637cd5ecde80CCC740023",
+		"VLMatch": "0x1a26B9Da578145622026cc63a3B1286CD89A6d61"
+	},
 	"localhost": {}
 }

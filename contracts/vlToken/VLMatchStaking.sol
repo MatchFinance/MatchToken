@@ -89,6 +89,10 @@ contract VLMatchStaking is OwnableUpgradeable {
         return (user.amount * newAccRewardPerToken) / SCALE - user.rewardDebt;
     }
 
+    function getUserStakedAmount(address _user) external view returns (uint256) {
+        return users[_user].amount;
+    }
+
     // ---------------------------------------------------------------------------------------- //
     // *********************************** Set Functions ************************************** //
     // ---------------------------------------------------------------------------------------- //
@@ -127,7 +131,7 @@ contract VLMatchStaking is OwnableUpgradeable {
         require(_amount < user.amount, "Insufficient amount to unstake");
 
         updateReward();
-        
+
         // If has reward, first claim it
         (uint256 pendingMesLBRReward, uint256 pendingPenaltyReward) = _harvestReward(msg.sender);
 

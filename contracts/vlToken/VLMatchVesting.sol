@@ -90,6 +90,10 @@ contract VLMatchVesting is OwnableUpgradeable {
     // ********************************** View Functions ************************************** //
     // ---------------------------------------------------------------------------------------- //
 
+    function getVestingId(address _user, uint256 _index) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_user, _index));
+    }
+
     /**
      * @notice Calculate penalty portion (with SCALE)
      *         Day 0: start with 100% penalty (10^18)
@@ -117,7 +121,7 @@ contract VLMatchVesting is OwnableUpgradeable {
         address _user,
         uint256 _index
     ) public view returns (uint256 availableAmount, uint256 penaltyAmount) {
-        bytes32 vestingId = _getVestingId(_user, _index);
+        bytes32 vestingId = getVestingId(_user, _index);
 
         uint256 totalAmount = vestings[vestingId].amount;
         uint256 vestingStartTime = vestings[vestingId].startTime;
@@ -129,13 +133,13 @@ contract VLMatchVesting is OwnableUpgradeable {
         penaltyAmount = totalAmount - availableAmount;
     }
 
-    function getUserVestings(address _user) external view returns(VestingInfo[] memory userVestings) {
+    function getUserVestings(address _user) external view returns (VestingInfo[] memory userVestings) {
         uint256 totalVestings = userVestingCount[_user];
 
-        for (uint256 i; i < totalVestings;) {
-            bytes32 vestingId = _getVestingId(_user, i);
+        for (uint256 i; i < totalVestings; ) {
+            bytes32 vestingId = getVestingId(_user, i);
             userVestings[i] = vestings[vestingId];
-            
+
             unchecked {
                 ++i;
             }
@@ -188,7 +192,7 @@ contract VLMatchVesting is OwnableUpgradeable {
         IVLMatch(vlMatch).burn(msg.sender, _amount);
 
         // Get vesting id by hashing user address and current vesting id
-        bytes32 vestingId = _getVestingId(msg.sender, userVestingCount[msg.sender]);
+        bytes32 vestingId = getVestingId(msg.sender, userVestingCount[msg.sender]);
         vestings[vestingId] = VestingInfo({ startTime: block.timestamp, amount: _amount });
 
         userVestingCount[msg.sender]++;
@@ -205,7 +209,7 @@ contract VLMatchVesting is OwnableUpgradeable {
      * @param _index Vesting index
      */
     function claimFromVesting(uint256 _index) external {
-        bytes32 vestingId = _getVestingId(msg.sender, _index);
+        bytes32 vestingId = getVestingId(msg.sender, _index);
 
         VestingInfo memory vesting = vestings[vestingId];
         require(vesting.amount > 0, "Vesting not found");
@@ -229,9 +233,5 @@ contract VLMatchVesting is OwnableUpgradeable {
         vestings[vestingId].amount = 0;
 
         emit ClaimFromVesting(msg.sender, _index, availableAmount, penaltyAmount);
-    }
-
-    function _getVestingId(address _user, uint256 _index) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(_user, _index));
     }
 }
