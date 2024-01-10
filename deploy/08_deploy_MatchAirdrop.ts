@@ -3,13 +3,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { readAddressList, readImplList, storeAddressList, storeImplList } from "../scripts/contractAddress";
 
-// * Deploy Match Public Sale
-// * It is a proxy deployment
-// * Contract:
-// *   - MatchPublicSale
-// * Tags:
-// *   - MatchPublicSale
-
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, network } = hre;
   const { deploy } = deployments;
@@ -21,8 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const addressList = readAddressList();
   const implList = readImplList();
 
-  const matchAddress = addressList[network.name].MatchToken;
-  const vlMatchAddress = addressList[network.name].VLMatch;
+  const vlMatchAddress = addressList[network.name].vlMatch;
 
   const proxyOptions: ProxyOptions = {
     proxyContract: "OpenZeppelinTransparentProxy",
@@ -30,24 +22,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     execute: {
       init: {
         methodName: "initialize",
-        args: [matchAddress, vlMatchAddress],
+        args: [vlMatchAddress],
       },
     },
   };
 
-  const vlMatchVesting = await deploy("VLMatchVesting", {
-    contract: "VLMatchVesting",
+  const matchAirdrop = await deploy("MatchAirdrop", {
+    contract: "MatchAirdrop",
     from: deployer,
     proxy: proxyOptions,
     args: [],
     log: true,
   });
-  addressList[network.name].VLMatchVesting = vlMatchVesting.address;
-  implList[network.name].VLMatchVesting = vlMatchVesting.implementation;
+  addressList[network.name].MatchAirdrop = matchAirdrop.address;
+  implList[network.name].MatchAirdrop = matchAirdrop.implementation;
 
   storeAddressList(addressList);
   storeImplList(implList);
 };
 
-func.tags = ["vlMatchVesting"];
+func.tags = ["MatchAirdrop"];
 export default func;

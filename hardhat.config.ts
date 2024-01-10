@@ -31,11 +31,10 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
       accountsList = process.env.PK_SEPOLIA ? [process.env.PK_SEPOLIA] : [];
       break;
     default:
-      jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
+      // jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
       accountsList = process.env.PK_MAINNET ? [process.env.PK_MAINNET] : [];
-    // jsonRpcUrl = "https://" + chain + ".gateway.tenderly.co/" + tenderlyKey;
+      jsonRpcUrl = "https://" + chain + ".gateway.tenderly.co/" + tenderlyKey;
   }
-
 
   return {
     accounts: accountsList,

@@ -22,7 +22,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const implList = readImplList();
 
   const matchAddress = addressList[network.name].MatchToken;
-  const vlMatchAddress = addressList[network.name].VLMatch;
 
   const proxyOptions: ProxyOptions = {
     proxyContract: "OpenZeppelinTransparentProxy",
@@ -30,24 +29,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     execute: {
       init: {
         methodName: "initialize",
-        args: [matchAddress, vlMatchAddress],
+        args: [matchAddress],
       },
     },
   };
 
-  const vlMatchVesting = await deploy("VLMatchVesting", {
-    contract: "VLMatchVesting",
+  const matchVesting = await deploy("MatchVesting", {
+    contract: "MatchVesting",
     from: deployer,
     proxy: proxyOptions,
     args: [],
     log: true,
   });
-  addressList[network.name].VLMatchVesting = vlMatchVesting.address;
-  implList[network.name].VLMatchVesting = vlMatchVesting.implementation;
+  addressList[network.name].MatchVesting = matchVesting.address;
+  implList[network.name].MatchVesting = matchVesting.implementation;
 
   storeAddressList(addressList);
   storeImplList(implList);
 };
 
-func.tags = ["vlMatchVesting"];
+func.tags = ["MatchVesting"];
 export default func;

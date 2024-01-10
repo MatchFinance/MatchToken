@@ -62,12 +62,15 @@ task("mintMatch", "Mint match token").setAction(async (_taskArgs, hre) => {
 
   const abi = ["function mint(address,uint256) external", "function addMinter(address) external"];
 
-  const matchToken = new ethers.Contract("0xafEAD1d7e31A13fA839e66fFff437D4cfC9335E0", abi, dev);
+  const matchToken = await ethers.getContractAt("MatchToken", addressList[network.name].MatchToken);
 
   // const tx1 = await matchToken.addMinter(dev.address);
   // console.log(tx1.hash);
 
-  const tx = await matchToken.mint("0x32eB34d060c12aD0491d260c436d30e5fB13a8Cd", ethers.parseEther("10000000"));
+  const total = await matchToken.totalSupply();
+  console.log("total", ethers.formatEther(total));
+
+  const tx = await matchToken.transfer("0x7A3F4AC772BbF92FE520810C1F249D1D13dbC614", ethers.parseEther("10000"));
   console.log(tx.hash);
 });
 
@@ -154,10 +157,111 @@ task("allocate").setAction(async (_, hre) => {
   );
 
   const all = await matchPublicSale.userClaimableAmount(dev.address);
-  console.log("all", all.toString());
+  console.log("all", ethers.formatEther(all));
 
   const rel = await matchPublicSale.userCurrentRelease(dev.address);
-  console.log("rel", rel.toString());
+  console.log("rel", ethers.formatEther(rel));
   // const tx = await matchWhitelistSale.allocateMatchTokens();
   // console.log(tx.hash);
+
+  // const tx1 = await matchPublicSale.setTGETimestamp(1704866400);
+  // console.log(tx1.hash);
+
+  // const tx2 = await matchWhitelistSale.setTGETimestamp(1704866400);
+  // console.log(tx2.hash);
+
+  const tokenBal1 = await matchPublicSale.matchTokenAllocated();
+  console.log("tokenBal1", ethers.formatEther(tokenBal1));
+
+  const tokenBal2 = await matchWhitelistSale.matchTokenAllocated();
+  console.log("tokenBal2", ethers.formatEther(tokenBal2));
+});
+
+task("mintMockERC20", async (_, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  const MockERC20 = await ethers.getContractAt("MockERC20", addressList[network.name].mesLBR);
+  const tx = await MockERC20.mint(addressList[network.name].MockRewardManager, ethers.parseEther("10000000000000"));
+  console.log(tx.hash);
+});
+
+task("addMinter", async (_, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  const vlMatch = await ethers.getContractAt("VLMatch", addressList[network.name].VLMatch);
+  const matchToken = await ethers.getContractAt("MatchToken", addressList[network.name].MatchToken);
+  const tx = await vlMatch.addMinter(addressList[network.name].VLMatchStaking);
+  console.log(tx.hash);
+
+  // const user = "0xaaEdbBa4fE83E5FA8579A1bA4158872Cd644488d";
+
+  // const mbal = await matchToken.balanceOf(user);
+  // console.log(ethers.formatEther(mbal.toString()));
+
+  // const bal = await vlMatch.balanceOf(user);
+  // console.log(ethers.formatEther(bal.toString()));
+
+  // const locked = await vlMatch.userLocked(user);
+  // console.log(ethers.formatEther(locked.toString()));
+
+  // const nonLocked = await vlMatch.nonLockedBalance(user);
+  // console.log(ethers.formatEther(nonLocked.toString()));
+
+  // const allowance = await matchToken.allowance(user, addressList[network.name].VLMatchVesting);
+  // console.log(ethers.formatEther(allowance.toString()));
+});
+
+task("setVesting", async (_, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  const matchVesting = await ethers.getContractAt("MatchVesting", addressList[network.name].MatchVesting);
+
+  const tx = await matchVesting.setNewVesting(
+    "0xaaEdbBa4fE83E5FA8579A1bA4158872Cd644488d",
+    1704706200,
+    1704706200,
+    30 * 3600,
+    5 * 3600,
+    ethers.parseEther("1000"),
+    ethers.parseEther("100"),
+  );
+  console.log(tx.hash);
+});
+
+task("setKK", async (_, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  const vlMatchStaking = await ethers.getContractAt("VLMatchStaking", addressList[network.name].VLMatchStaking);
+  const vlMatchVesting = await ethers.getContractAt("VLMatchVesting", addressList[network.name].VLMatchVesting);
+  const vlMatch = await ethers.getContractAt("VLMatch", addressList[network.name].VLMatch);
+
+  // const tx = await vlMatchVesting.setVLMatchStaking(addressList[network.name].VLMatchStaking);
+  // console.log(tx.hash);
+
+  const v1 = await vlMatchVesting.vlMatch();
+  console.log(v1);
+
+  const v2 = await vlMatchVesting.matchToken();
+  console.log(v2);
+
+  const v3 = await vlMatchStaking.vlMatch();
+  console.log(v3);
+
+  const v4 = await vlMatchStaking.vlMatchVesting();
+  console.log(v4);
+
+  const isBurner = await vlMatch.isMinter(addressList[network.name].VLMatchVesting);
+  console.log(isBurner);
 });

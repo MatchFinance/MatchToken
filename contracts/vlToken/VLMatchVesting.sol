@@ -183,8 +183,18 @@ contract VLMatchVesting is OwnableUpgradeable {
         emit MatchTokenStaked(msg.sender, _amount);
     }
 
+    function stakeMatchAndVLMatch(uint256 _amount) external {
+        stakeMatchToken(_amount);
+        IVLMatchStaking(vlMatchStaking).delegateStake(_amount, msg.sender);
+    }
+
+    function unstakeAndStartVesting(uint256 _amount) external {
+        IVLMatchStaking(vlMatchStaking).delegateUnstake(_amount, msg.sender);
+        startVesting(_amount);
+    }
+
     // Vest vlMatch
-    function startVesting(uint256 _amount) external {
+    function startVesting(uint256 _amount) public {
         require(_amount > 0, "Amount must be greater than 0");
         require(matchToken != address(0) && vlMatch != address(0), "Not set token address");
         require(IVLMatch(vlMatch).nonLockedBalance(msg.sender) >= _amount, "Not enough non-locked vlMatch");
@@ -197,7 +207,7 @@ contract VLMatchVesting is OwnableUpgradeable {
 
         userVestingCount[msg.sender]++;
 
-        users[msg.sender].vestedVLMatchAmount -= _amount;
+        users[msg.sender].vestedVLMatchAmount += _amount;
         totalVestedVLMatch += _amount;
 
         emit VestingStarted(msg.sender, _amount);

@@ -21,8 +21,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const addressList = readAddressList();
   const implList = readImplList();
 
-  const matchAddress = addressList[network.name].MatchToken;
   const vlMatchAddress = addressList[network.name].VLMatch;
+  const mesLBRAddress = addressList[network.name].mesLBR;
+  const rewardManagerAddress = addressList[network.name].MockRewardManager;
 
   const proxyOptions: ProxyOptions = {
     proxyContract: "OpenZeppelinTransparentProxy",
@@ -30,24 +31,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     execute: {
       init: {
         methodName: "initialize",
-        args: [matchAddress, vlMatchAddress],
+        args: [vlMatchAddress, mesLBRAddress, rewardManagerAddress],
       },
     },
   };
 
-  const vlMatchVesting = await deploy("VLMatchVesting", {
-    contract: "VLMatchVesting",
+  const vlMatchStaking = await deploy("VLMatchStaking", {
+    contract: "VLMatchStaking",
     from: deployer,
     proxy: proxyOptions,
     args: [],
     log: true,
   });
-  addressList[network.name].VLMatchVesting = vlMatchVesting.address;
-  implList[network.name].VLMatchVesting = vlMatchVesting.implementation;
+  addressList[network.name].VLMatchStaking = vlMatchStaking.address;
+  implList[network.name].VLMatchStaking = vlMatchStaking.implementation;
 
   storeAddressList(addressList);
   storeImplList(implList);
 };
 
-func.tags = ["vlMatchVesting"];
+func.tags = ["vlMatchStaking"];
 export default func;

@@ -6,9 +6,9 @@ import { readAddressList, storeAddressList } from "../scripts/contractAddress";
 // * Deploy Match Token
 // * It is a non-proxy deployment
 // * Contract:
-// *   - MatchToken
+// *   - ProxyAdmin
 // * Tags:
-// *   - MatchToken
+// *   - ProxyAdmin
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, network } = hre;
@@ -17,19 +17,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   network.name = network.name == "hardhat" ? "localhost" : network.name;
 
   const { deployer } = await getNamedAccounts();
-  
+
   const addressList = readAddressList();
 
-  const matchToken = await deploy("MatchToken", {
-    contract: "MatchToken",
+  const mockRewardManager = await deploy("MockRewardManager", {
+    contract: "MockRewardManager",
     from: deployer,
     args: [],
     log: true,
   });
-  addressList[network.name].MatchToken = matchToken.address;
+  addressList[network.name].MockRewardManager = mockRewardManager.address;
 
   storeAddressList(addressList);
 };
 
-func.tags = ["MatchToken"];
+func.tags = ["MockRewardManager"];
 export default func;
