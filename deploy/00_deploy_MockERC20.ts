@@ -3,12 +3,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { readAddressList, storeAddressList } from "../scripts/contractAddress";
 
-// * Deploy Match Token
-// * It is a non-proxy deployment
-// * Contract:
-// *   - ProxyAdmin
-// * Tags:
-// *   - ProxyAdmin
+// * Deploy mock mesLBR on testnet, not used in mainnet
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, network } = hre;
