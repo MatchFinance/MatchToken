@@ -3,12 +3,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { readAddressList, readImplList, storeAddressList, storeImplList } from "../scripts/contractAddress";
 
-// * Deploy Match Public Sale
-// * It is a proxy deployment
-// * Contract:
-// *   - MatchPublicSale
-// * Tags:
-// *   - MatchPublicSale
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, network } = hre;

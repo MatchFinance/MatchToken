@@ -140,6 +140,44 @@ task("initPublic").setAction(async (_, hre) => {
   console.log(tx.hash);
 });
 
+task("getUserIDORelease", async (_, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  const matchPublicSale = await ethers.getContractAt("MatchPublicSale", addressList[network.name].MatchPublicSale);
+  const matchWhitelistSale = await ethers.getContractAt(
+    "MatchWhitelistSale",
+    addressList[network.name].MatchWhitelistSale,
+  );
+
+  const all = await matchPublicSale.userClaimableAmount(dev.address);
+  console.log("User claimable amount:", ethers.formatEther(all));
+
+  const rel = await matchPublicSale.userCurrentRelease(dev.address);
+  console.log("User current release:", ethers.formatEther(rel));
+});
+
+task("getIDOContractInfo", async (_, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  const matchPublicSale = await ethers.getContractAt("MatchPublicSale", addressList[network.name].MatchPublicSale);
+  const matchWhitelistSale = await ethers.getContractAt(
+    "MatchWhitelistSale",
+    addressList[network.name].MatchWhitelistSale,
+  );
+
+  const tokenBal1 = await matchPublicSale.matchTokenAllocated();
+  console.log("Match allocated in match public sale:", ethers.formatEther(tokenBal1));
+
+  const tokenBal2 = await matchWhitelistSale.matchTokenAllocated();
+  console.log("Match allocated in match whitelist sale", ethers.formatEther(tokenBal2));
+});
+
 task("allocate").setAction(async (_, hre) => {
   const { network, ethers } = hre;
   const addressList = readAddressList();
@@ -156,11 +194,6 @@ task("allocate").setAction(async (_, hre) => {
     addressList[network.name].MatchWhitelistSale,
   );
 
-  const all = await matchPublicSale.userClaimableAmount(dev.address);
-  console.log("all", ethers.formatEther(all));
-
-  const rel = await matchPublicSale.userCurrentRelease(dev.address);
-  console.log("rel", ethers.formatEther(rel));
   // const tx = await matchWhitelistSale.allocateMatchTokens();
   // console.log(tx.hash);
 
@@ -169,12 +202,6 @@ task("allocate").setAction(async (_, hre) => {
 
   // const tx2 = await matchWhitelistSale.setTGETimestamp(1704866400);
   // console.log(tx2.hash);
-
-  const tokenBal1 = await matchPublicSale.matchTokenAllocated();
-  console.log("tokenBal1", ethers.formatEther(tokenBal1));
-
-  const tokenBal2 = await matchWhitelistSale.matchTokenAllocated();
-  console.log("tokenBal2", ethers.formatEther(tokenBal2));
 });
 
 task("mintMockERC20", async (_, hre) => {

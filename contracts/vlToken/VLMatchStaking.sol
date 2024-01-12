@@ -52,6 +52,8 @@ contract VLMatchStaking is OwnableUpgradeable {
     }
     mapping(address user => UserInfo userInfo) public users;
 
+    bool public claimAvailable;
+
     // ---------------------------------------------------------------------------------------- //
     // *************************************** Events ***************************************** //
     // ---------------------------------------------------------------------------------------- //
@@ -110,6 +112,10 @@ contract VLMatchStaking is OwnableUpgradeable {
     function setVLMatchVesting(address _vlMatchVesting) external onlyOwner {
         vlMatchVesting = _vlMatchVesting;
         emit VLMatchVestingSet(_vlMatchVesting);
+    }
+
+    function openClaim() external onlyOwner {
+        claimAvailable = true;
     }
 
     // ---------------------------------------------------------------------------------------- //
@@ -238,6 +244,7 @@ contract VLMatchStaking is OwnableUpgradeable {
     function _claimUserReward(
         address _user
     ) internal returns (uint256 actualMesLBRReward, uint256 actualPenaltyReward) {
+        require(claimAvailable, "Claim not available");
         UserInfo storage user = users[_user];
 
         // Claim reward
