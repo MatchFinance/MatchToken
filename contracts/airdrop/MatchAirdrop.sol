@@ -8,14 +8,21 @@ import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerklePr
 
 contract MatchAirdrop is OwnableUpgradeable {
     address public vlMatch;
+    address public matchToken;
 
     bytes32 public merkleRoot;
 
     event AirdropClaimed(address indexed user, uint256 amount);
 
-    function initialize(address _vlMatch) public initializer {
+    function initialize(address _matchToken, address _vlMatch) public initializer {
         __Ownable_init(msg.sender);
+
+        matchToken = _matchToken;
         vlMatch = _vlMatch;
+    }
+
+    function setMatchToken(address _matchToken) external onlyOwner {
+        matchToken = _matchToken;
     }
 
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
@@ -30,5 +37,14 @@ contract MatchAirdrop is OwnableUpgradeable {
         IVLMatch(vlMatch).mint(msg.sender, _amount);
 
         emit AirdropClaimed(msg.sender, _amount);
+    }
+
+    function send(address[] memory _users, uint256[] memory _amounts) external onlyOwner {
+        require(_users.length == _amounts.length, "Invalid input");
+
+        for (uint256 i; i < _users.length; i++) {
+            IVLMatch(matchToken).mint(_users[i], _amounts[i]);
+            emit AirdropClaimed(_users[i], _amounts[i]);
+        }
     }
 }

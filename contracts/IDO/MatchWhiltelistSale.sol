@@ -206,6 +206,23 @@ contract MatchWhitelistSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, I
         emit MatchTokenClaimed(msg.sender, amountToClaim);
     }
 
+    function claimFromPublicSale(address _user) external nonReentrant {
+        require(msg.sender == matchPublicSale, "Only public sale contract");
+        require(block.timestamp > tgeTimestamp && tgeTimestamp > 0, "TGE is not reached yet");
+        require(matchTokenAllocated > 0, "Match tokens not allocated yet");
+
+        uint256 releasedAmount = userCurrentRelease(_user);
+        // require(releasedAmount > 0, "No match token to claim");
+
+        // ! Added 2023-12-21
+        uint256 amountToClaim = releasedAmount - userClaimedAmount[_user];
+        userClaimedAmount[_user] += amountToClaim;
+
+        IERC20(matchToken).safeTransfer(_user, amountToClaim);
+
+        emit MatchTokenClaimed(_user, amountToClaim);
+    }
+
     // Owner claim all funds out of the contract
     function claimFund() external onlyOwner {
         require(block.timestamp > PUB_END, "IDO is not finished yet");

@@ -1,0 +1,193 @@
+[
+  {
+    "address": "0xf3057ec7640593af913354B8CfD80c9458690273",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 750,
+    "tgeAmount": 750,
+    "interval": 1
+  },
+  {
+    "address": "0x7201788846913733e42b24C294dA09E0F62aEB74",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 416,
+    "tgeAmount": 416,
+    "interval": 1
+  },
+  {
+    "address": "0x1442059d5e3af94519fC867fF32d8C3702fD3A3c",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 1811,
+    "tgeAmount": 1811,
+    "interval": 1
+  },
+  {
+    "address": "0xa09dFd485742d53C96ba845c6F26cf1B7d5E43Eb",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 333,
+    "tgeAmount": 333,
+    "interval": 1
+  },
+  {
+    "address": "0x0b03c38c4db0D48d97E5FD991Fce1828Eb46D244",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 666,
+    "tgeAmount": 666,
+    "interval": 1
+  },
+  {
+    "address": "0x6c0a792C2Ef83c9fe12226ce22AC2c7eD9E07764",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 333,
+    "tgeAmount": 333,
+    "interval": 1
+  },
+  {
+    "address": "0xC8f003BE0EB2554Ce0d5af1CfADb1104aae4a5bB",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 416,
+    "tgeAmount": 416,
+    "interval": 1
+  },
+  {
+    "address": "0x1D70c357bdFCC4A9A068cE735035a6147a5bEc14",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 166,
+    "tgeAmount": 166,
+    "interval": 1
+  },
+  {
+    "address": "0xb656e17928A7a9cE39bc9F77b3b4e2BB671a1e27",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 1000,
+    "tgeAmount": 1000,
+    "interval": 1
+  },
+  {
+    "address": "0x55fe7c00f7af55e66d2940002b19070d15b0dcf4",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 833,
+    "tgeAmount": 833,
+    "interval": 1
+  },
+  {
+    "address": "0x87d63B96ca7695775fddE18ADE27480143F9dfA0",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 7500,
+    "tgeAmount": 2250,
+    "interval": 1
+  },
+  {
+    "address": "0xab4258c5cda2df96be5fb897a0b5a3d1c9e06fec",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 3833,
+    "tgeAmount": 1150,
+    "interval": 1
+  },
+  {
+    "address": "0x290e078363ada6ad02373281d7e12c7aa7c3b770",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 7500,
+    "tgeAmount": 2250,
+    "interval": 1
+  },
+  {
+    "address": "0xa196E12609F8B25868990254fbA56F12d8D4B087",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 12000,
+    "tgeAmount": 3600,
+    "interval": 1
+  },
+  {
+    "address": "0x4d140B3061DC0104320Ec0C99A31e95344162B68",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 8000,
+    "tgeAmount": 2400,
+    "interval": 1
+  },
+  {
+    "address": "0xFC7f6864173580e4542D4E68d4A447f98dCD4103",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 3750,
+    "tgeAmount": 3750,
+    "interval": 1
+  },
+
+  {
+    "address": "0x739c1BF7Bd4d811743f626fd61e109Df0baE471B",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 3750,
+    "tgeAmount": 3750,
+    "interval": 1
+  },
+
+  {
+    "address": "0x7dF87511Adc104Aa1Ae003Ba8Dac1322c6E2A1b5",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 50000,
+    "tgeAmount": 5000,
+    "interval": 1
+  },
+  {
+    "address": "0xDa4D0F5FaC406E779683b9B679e13a2BfFA9d94C",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 50000,
+    "tgeAmount": 5000,
+    "interval": 1
+  },
+  {
+    "address": "0xE619D4574FD507C1A1eFf7BE061B71447eE40859",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 50000,
+    "tgeAmount": 5000,
+    "interval": 1
+  },
+  {
+    "address": "0x50bEc6F02aa38577955e3D595137B335fcF1a822",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 100000,
+    "tgeAmount": 10000,
+    "interval": 1
+  }
+]

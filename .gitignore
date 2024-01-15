@@ -19,3 +19,7 @@ deployments
 coverage.json
 package-lock.json
 yarn.lock
+
+MatchToken.json
+info/match_account.csv 
+info/sendAirdrop.json

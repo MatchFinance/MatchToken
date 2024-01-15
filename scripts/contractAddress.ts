@@ -36,3 +36,15 @@ export const readWhitelist = function () {
 export const readRealWhitelist = function () {
   return JSON.parse(fs.readFileSync("info/realWhitelist.json", "utf-8"));
 };
+
+export const readVestingList = function () {
+  return JSON.parse(fs.readFileSync("info/vestingList.json", "utf-8"));
+};
+
+export const readTeamVestingList = function () {
+  return JSON.parse(fs.readFileSync("info/teamVestingList.json", "utf-8"));
+};
+
+export const readSendAirdropList = function () {
+  return JSON.parse(fs.readFileSync("info/sendAirdrop.json", "utf-8"));
+};

@@ -23,7 +23,7 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     // ************************************** Constants *************************************** //
     // ---------------------------------------------------------------------------------------- //
 
-    uint256 public constant TGE = 100;
+    uint256 public constant TGE = 1705327200;
 
     // ---------------------------------------------------------------------------------------- //
     // ************************************** Variables *************************************** //
@@ -77,6 +77,10 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     // ************************************ Main Functions ************************************ //
     // ---------------------------------------------------------------------------------------- //
 
+    function setMatchToken(address _matchToken) external onlyOwner {
+        matchToken = _matchToken;
+    }
+
     // ! If a receiver's vesting is "all released at tge"
     // ! Should set it with parameters:
     // !  -> start = cliff
@@ -93,7 +97,7 @@ contract MatchVesting is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     ) public onlyOwner {
         require(_amount > 0, "Amount must be greater than zero");
         require(_amount >= _tgeAmount, "Amount must be greater than tge");
-        require(_start >= TGE, "Should start at or after TGE");
+        // require(_start >= TGE, "Should start at or after TGE");
         require(_start <= _cliff, "Cliff must be after start");
         require(_start + _duration >= block.timestamp, "Vesting must end in the future");
 

@@ -191,12 +191,12 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
     }
 
     // Claim match tokens
-    function claim() external nonReentrant {
+    function claim() public nonReentrant {
         require(block.timestamp > tgeTimestamp && tgeTimestamp > 0, "TGE is not reached yet");
-        require(matchTokenAllocated > 0, "Match tokens not allocated yet");
+        require(matchTokenAllocated > 0, "Match tokens not allocated");
 
         uint256 releasedAmount = userCurrentRelease(msg.sender);
-        require(releasedAmount > 0, "No match token to claim");
+        // require(releasedAmount > 0, "No match token to claim");
 
         // ! Added 2023-12-21
         uint256 amountToClaim = releasedAmount - userClaimedAmount[msg.sender];
@@ -205,6 +205,15 @@ contract MatchPublicSale is OwnableUpgradeable, ReentrancyGuardUpgradeable, IDOC
         IERC20(matchToken).safeTransfer(msg.sender, amountToClaim);
 
         emit MatchTokenClaimed(msg.sender, amountToClaim);
+    }
+
+    // Claim match token from both rounds
+    function claimBothRounds() external {
+        // Claim public sale first
+        claim();
+
+        // Then claim whitelist sale
+        IMatchWhitelistSale(matchWhitelistSale).claimFromPublicSale(msg.sender);
     }
 
     // Owner claim all funds out of the contract

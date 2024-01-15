@@ -1,0 +1,38 @@
+[
+  {
+    "address": "0x29f18F12e1Df933592e31fF04E87841ACbC52B1b",
+    "start": 1705291200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 100,
+    "tgeAmount": 10,
+    "interval": 1
+  },
+  {
+    "address": "0xaEd009c79E1D7978FD3B87EBe6d1f1FA3C542161",
+    "start": 1705291200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 100,
+    "tgeAmount": 10,
+    "interval": 1
+  },
+  {
+    "address": "0x04bb0898b9cb552dAdFe54cD42EF2D0944586D7e",
+    "start": 1705291200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 100,
+    "tgeAmount": 10,
+    "interval": 1
+  },
+  {
+    "address": "0xaaEdbBa4fE83E5FA8579A1bA4158872Cd644488d",
+    "start": 1705291200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 100,
+    "tgeAmount": 10,
+    "interval": 1
+  }
+]

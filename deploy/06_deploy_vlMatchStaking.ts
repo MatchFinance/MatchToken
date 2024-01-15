@@ -23,7 +23,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const vlMatchAddress = addressList[network.name].VLMatch;
   const mesLBRAddress = addressList[network.name].mesLBR;
-  const rewardManagerAddress = addressList[network.name].MockRewardManager;
 
   const proxyOptions: ProxyOptions = {
     proxyContract: "OpenZeppelinTransparentProxy",
@@ -31,7 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     execute: {
       init: {
         methodName: "initialize",
-        args: [vlMatchAddress, mesLBRAddress, rewardManagerAddress],
+        args: [vlMatchAddress, mesLBRAddress],
       },
     },
   };

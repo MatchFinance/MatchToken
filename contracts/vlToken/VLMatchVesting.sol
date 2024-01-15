@@ -74,6 +74,7 @@ contract VLMatchVesting is OwnableUpgradeable {
     event VLMatchStaked(address indexed user, uint256 amount);
     event VestingStarted(address indexed user, uint256 amount);
     event ClaimFromVesting(address indexed user, uint256 index, uint256 vestedAmount, uint256 penaltyAmount);
+    event ClaimFromVestings(address indexed user, uint256 index, uint256 vestedAmount, uint256 penaltyAmount);
 
     // ---------------------------------------------------------------------------------------- //
     // ************************************ Initializer *************************************** //
@@ -180,6 +181,9 @@ contract VLMatchVesting is OwnableUpgradeable {
         // 1:1 mint vlMatch token
         IVLMatch(vlMatch).mint(msg.sender, _amount);
 
+        // Burn match token
+        // IERC20(matchToken).transfer(address(0), _amount);
+
         emit MatchTokenStaked(msg.sender, _amount);
     }
 
@@ -211,6 +215,49 @@ contract VLMatchVesting is OwnableUpgradeable {
         totalVestedVLMatch += _amount;
 
         emit VestingStarted(msg.sender, _amount);
+    }
+
+    function claimFromVestings(uint256[] memory _indexes) external {
+        uint256 totalAvailableAmount;
+        uint256 totalPenaltyAmount;
+        uint256 totalClaimedVestingAmount;
+
+        for (uint256 i; i < _indexes.length; ) {
+            bytes32 vestingId = getVestingId(msg.sender, _indexes[i]);
+            VestingInfo storage vesting = vestings[vestingId];
+
+            // If vesting is empty, skip
+            if (vesting.amount == 0) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
+
+            uint256 penaltyPortion = getPenaltyPortion(vesting.startTime, block.timestamp);
+
+            // Amount to claim and to be distributed to other vestors
+            uint256 availableAmount = ((SCALE - penaltyPortion) * vesting.amount) / SCALE;
+            uint256 penaltyAmount = vesting.amount - availableAmount;
+
+            totalAvailableAmount += availableAmount;
+            totalPenaltyAmount += penaltyAmount;
+            totalClaimedVestingAmount += vesting.amount;
+            vestings[vestingId].amount = 0;
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        IVLMatchStaking(vlMatchStaking).updatePenaltyReward(totalPenaltyAmount);
+
+        // Transfer available amount to user
+        IERC20(matchToken).safeTransfer(msg.sender, totalAvailableAmount);
+
+        totalVestedVLMatch -= totalClaimedVestingAmount;
+
+        emit ClaimFromVestings(msg.sender, _indexes.length, totalAvailableAmount, totalPenaltyAmount);
     }
 
     /**

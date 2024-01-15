@@ -4,4 +4,6 @@ pragma solidity =0.8.21;
 
 interface IMatchWhitelistSale {
     function totalEthersReceived() external view returns (uint256);
+
+    function claimFromPublicSale(address user) external;
 }
