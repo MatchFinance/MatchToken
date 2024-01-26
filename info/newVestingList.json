@@ -1,0 +1,20 @@
+[
+  {
+    "address": "0x4a62b26c497d5A87f6773cfdc0534Bf3EbCe781b",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 3750,
+    "tgeAmount": 3750,
+    "interval": 1
+  },
+  {
+    "address": "0x445989351dA1754ED8d4Dd288D2b32ACcF75ff49",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 1250,
+    "tgeAmount": 1250,
+    "interval": 1
+  }
+]

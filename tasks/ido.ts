@@ -4,6 +4,7 @@ import nestCsv from "neat-csv";
 
 import {
   readAddressList,
+  readAirdropList,
   readRealWhitelist,
   readSendAirdropList,
   readTeamVestingList,
@@ -388,8 +389,8 @@ task("addVestings", async (_, hre) => {
 
   const [dev] = await ethers.getSigners();
 
-  // const list = readVestingList();
-  const list = readTeamVestingList();
+  const list = readVestingList();
+  // const list = readTeamVestingList();
   console.log("Total vestings: ", list.length);
   console.log("Vesting list: ", list);
 
@@ -468,4 +469,44 @@ task("sendAirdrop", async (_, hre) => {
   const matchAirdrop = await ethers.getContractAt("MatchAirdrop", addressList[network.name].MatchAirdrop);
   const tx = await matchAirdrop.send(receiverList, amountList);
   console.log(tx.hash);
+});
+
+task("pending", async (_, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+  const vlMatchStaking = await ethers.getContractAt("VLMatchStaking", addressList[network.name].VLMatchStaking);
+
+  const address = "0xaEd009c79E1D7978FD3B87EBe6d1f1FA3C542161";
+
+  const pending = await vlMatchStaking.pendingRewards(address);
+  console.log("mesLBR reward", ethers.formatEther(pending[0]));
+  console.log("penalty vlMatch reward:", ethers.formatEther(pending[1]));
+  console.log("USDC reward:", ethers.formatUnits(pending[2], 6));
+});
+
+task("setAirdropMerkleRoot", "Set merkle root in match airdrop").setAction(async (_taskArgs, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+  const airdropList = readAirdropList();
+
+  const leaves = airdropList.map((info: any) =>
+    ethers.solidityPackedKeccak256(["address", "uint256"], [info.address, ethers.parseEther(info.amount.toString())]),
+  );
+  const tree = new MerkleTree(leaves, ethers.keccak256, { sort: true });
+  const root = tree.getHexRoot();
+  console.log("root", root);
+
+  const user = "0xc4273C1819D5cF6af10d04377602C30eaE6791fF";
+  const amount = ethers.parseEther("144");
+  const proof = tree.getHexProof(ethers.solidityPackedKeccak256(["address", "uint256"], [user, amount]));
+
+  const matchAirdrop = await ethers.getContractAt("MatchAirdrop", addressList[network.name].MatchAirdrop);
+
+  const isValid = await matchAirdrop.isValidReceiver(user, amount, proof);
+  console.log("isValid", isValid);
+
+  const tx = await matchAirdrop.setMerkleRoot(root);
+  console.log("tx hash", tx.hash);
 });

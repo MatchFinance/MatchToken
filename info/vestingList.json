@@ -189,5 +189,15 @@
     "totalAmount": 100000,
     "tgeAmount": 10000,
     "interval": 1
+  },
+  {
+    "address": "0xA6B5B8FF38A0cDCf52D18F1cFbB0198BAF3eeC36",
+    "start": 1705327200,
+    "toCliffSecond": 1,
+    "durationSecond": 31104000,
+    "totalAmount": 291,
+    "tgeAmount": 291,
+    "interval": 1
   }
+
 ]

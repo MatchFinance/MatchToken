@@ -12,13 +12,21 @@ contract MatchAirdrop is OwnableUpgradeable {
 
     bytes32 public merkleRoot;
 
+    mapping(address => bool) public claimed;
+
     event AirdropClaimed(address indexed user, uint256 amount);
+
 
     function initialize(address _matchToken, address _vlMatch) public initializer {
         __Ownable_init(msg.sender);
 
         matchToken = _matchToken;
         vlMatch = _vlMatch;
+    }
+
+    function isValidReceiver(address _user, uint256 _amount, bytes32[] memory _proof) external view returns (bool) {
+        bytes32 leaf = keccak256(abi.encodePacked(_user, _amount));
+        return MerkleProof.verify(_proof, merkleRoot, leaf);
     }
 
     function setMatchToken(address _matchToken) external onlyOwner {
@@ -34,6 +42,8 @@ contract MatchAirdrop is OwnableUpgradeable {
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender, _amount));
         require(MerkleProof.verify(_proof, merkleRoot, leaf), "Invalid proof");
 
+        require(!claimed[msg.sender], "Already claimed");
+        claimed[msg.sender] = true;
         IVLMatch(vlMatch).mint(msg.sender, _amount);
 
         emit AirdropClaimed(msg.sender, _amount);
