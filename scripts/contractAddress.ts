@@ -52,3 +52,11 @@ export const readSendAirdropList = function () {
 export const readAirdropList = function () {
   return JSON.parse(fs.readFileSync("info/airdrop/airdropList.json", "utf-8"));
 };
+
+export const readLybraList = function () {
+  return JSON.parse(fs.readFileSync("info/lbrInfo/stakeLBR.json", "utf-8"));
+};
+
+export const storeLBRList = function (lbrList: object) {
+  fs.writeFileSync("info/lbrInfo/res.json", JSON.stringify(lbrList, null, "\t"));
+};

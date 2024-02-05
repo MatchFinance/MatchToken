@@ -5,11 +5,13 @@ import nestCsv from "neat-csv";
 import {
   readAddressList,
   readAirdropList,
+  readLybraList,
   readRealWhitelist,
   readSendAirdropList,
   readTeamVestingList,
   readVestingList,
   readWhitelist,
+  storeLBRList,
 } from "../scripts/contractAddress";
 import { toWei } from "../test/helpers";
 import { MatchWhitelistSale, MatchWhitelistSale__factory } from "../types";
@@ -509,4 +511,27 @@ task("setAirdropMerkleRoot", "Set merkle root in match airdrop").setAction(async
 
   const tx = await matchAirdrop.setMerkleRoot(root);
   console.log("tx hash", tx.hash);
+});
+
+task("getLybraList", "Get lybra list").setAction(async (_taskArgs, hre) => {
+  const { network, ethers } = hre;
+  const addressList = readAddressList();
+
+  const [dev] = await ethers.getSigners();
+
+  const list = readLybraList();
+  console.log("Total airdrop: ", list.length);
+
+  let receiverList = [];
+
+  for (let i = 0; i < list.length; i++) {
+    const vesting = list[i];
+    receiverList.push(vesting.From);
+  }
+  console.log("Receiver list: ", receiverList);
+
+  const noRepeat = Array.from(new Set(receiverList));
+  console.log("No repeat list: ", noRepeat);
+
+  storeLBRList(noRepeat);
 });
